@@ -43,7 +43,10 @@
     "-lpthread",
     "-lXrandr",
     "-lXi",
-    "-ldl"
+    "-ldl",
+    "-lGLEW",
+    "-lGLU",
+    "-lcglm"
   ],
   "C_Cpp_Runner.includePaths": [],
   "C_Cpp_Runner.includeSearch": [
