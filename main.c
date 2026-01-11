@@ -1,31 +1,24 @@
 #include "config.h"
-#include "utils.h"
-
+#include "mesh.h"
 #include "shader_utils.h"
-
-#include <GL/glew.h>
+#include "utils.h"
+#include <glad/glad.h>
 #include <GL/gl.h>
-
 #include <GL/glext.h>
 #include <stdbool.h>
 #include <stdio.h>
-
 #include <GLFW/glfw3.h>
-
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
 }
 
-float vertices[] = {
-    0.5f, 0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.1f, -0.5f, 0.0f, 0.1f, 0.5f, 0.0f,
-};
+float vertices[] = {0.5f, 0.5f,  0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+                    0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+                    0.1f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+                    0.1f, 0.5f,  0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f};
 
-float colors[] = {
-    0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-};
-
-unsigned int elements[] = {
+int elements[] = {
     // note that we start from 0!
     0, 1,
     3, // first triangle
@@ -35,6 +28,7 @@ unsigned int elements[] = {
 };
 
 int main() {
+
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -44,50 +38,35 @@ int main() {
   // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
   GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, TITLE, NULL, NULL);
-  glfwMakeContextCurrent(window);
   if (window == NULL) {
-    printf("Failed to make window!");
+    fprintf(stdout, "Failed to make window!");
     glfwTerminate();
     return -1;
   }
+
+  glfwMakeContextCurrent(window);
+  // GLint glewResult = glewInit();
+  // if (glewResult != GLEW_OK) {
+  //   fprintf(stdout, "Error: %s\n", glewGetErrorString(glewResult));
+  //   exit(1);
+  // }
 
   glViewport(0, 0, WIDTH, HEIGHT);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
   ShaderProg shaderProgram;
   initShaderProgram(&shaderProgram);
-  Shader vertexShader=  {.type=GL_VERTEX_SHADER};
-  Shader fragmentShader=  {.type=GL_FRAGMENT_SHADER};
-  initShaderFromFile(&vertexShader,"./shaders/vertex.glsl");
-  initShaderFromFile(&vertexShader,"./shaders/fragment.glsl");
+  Shader vertexShader = {.type = GL_VERTEX_SHADER};
+  Shader fragmentShader = {.type = GL_FRAGMENT_SHADER};
+  initShaderFromFile(&vertexShader, "./shaders/vertex.glsl");
+  initShaderFromFile(&vertexShader, "./shaders/fragment.glsl");
   Shader shaders[] = {vertexShader, fragmentShader};
   attachShadersToProgram(&shaderProgram, shaders, 2);
 
-  unsigned int EBO;
-  unsigned int VAO;
-  unsigned int colVBO;
-  unsigned int VBO;
-
-  glGenVertexArrays(1, &VAO);
-  glGenBuffers(1, &VBO);
-  glGenBuffers(1, &colVBO);
-  glGenBuffers(1, &EBO);
-
-  glBindVertexArray(VAO);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements,
-               GL_STATIC_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
-
-  glEnableVertexAttribArray(0);
-
-  glBindBuffer(GL_ARRAY_BUFFER, colVBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
-  glEnableVertexAttribArray(1);
+  Mesh mesh;
+  initMesh(&mesh, (Vertex *)vertices, (int)(sizeof(vertices) / sizeof(Vertex)),
+           elements, LENGTH(elements));
+  setBuffersMesh(&mesh);
 
   useShaderProgram(&shaderProgram);
 
@@ -95,19 +74,14 @@ int main() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glDrawElements(GL_TRIANGLES, LENGTH(elements), GL_UNSIGNED_INT, 0);
+    drawMesh(&mesh);
 
     glfwSwapBuffers(window);
-
     glfwPollEvents();
+
   }
 
-
-  glDeleteVertexArrays(1, &VAO);
-  glDeleteBuffers(1, &VBO);
-  glDeleteBuffers(1, &EBO);
+  freeMesh(&mesh);
 
   freeShaderProgram(&shaderProgram);
 

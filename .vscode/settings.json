@@ -44,9 +44,8 @@
     "-lXrandr",
     "-lXi",
     "-ldl",
-    "-lGLEW",
-    "-lGLU",
-    "-lcglm"
+    "-lcglm",
+    "-lm",
   ],
   "C_Cpp_Runner.includePaths": [],
   "C_Cpp_Runner.includeSearch": [

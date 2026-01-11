@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include "stdlib.h"
 #include "shader_utils.h"
-#include <GL/glew.h>
+#include <glad/glad.h>
+#include <GL/gl.h>
 
 
 void initShaderProgram(ShaderProg* shaderProg) {

@@ -1,6 +1,6 @@
 #include "shader_utils.h"
 #include "stb_image.h"
-#include <GL/glew.h>
+#include <glad/glad.h>
 #include <GL/gl.h>
 #include "mesh.h"
 #include <stdio.h>

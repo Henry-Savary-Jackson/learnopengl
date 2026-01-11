@@ -17,8 +17,8 @@ typedef  struct{
 
 typedef struct{
     f_vec3 pos;
-    f_vec2 texPos;
     f_vec3 col;
+    f_vec2 texPos;
 }  Vertex ;
 // maybe put __attribute__((packed)) incase of changes
 
@@ -51,3 +51,5 @@ int getEncodedVertexDataLength(Mesh* mesh );
 void encodeVertexData(Mesh* mesh, float* data);
 
 void freeMesh(Mesh* mesh);
+
+void drawMesh(Mesh *mesh) ;

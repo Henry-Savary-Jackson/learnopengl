@@ -1,6 +1,6 @@
 #include "mesh.h"
 #include "textures.h"
-#include <GL/glew.h>
+#include <glad/glad.h>
 #include <cglm/types.h>
 #include <stddef.h>
 #include <string.h>
@@ -12,12 +12,13 @@ void initMesh(Mesh *mesh, Vertex *vertices, int numVertices, int elements[],
   mesh->numVertices = numVertices;
   mesh->elementOrder = elements;
   mesh->numElements = numElements;
+  mesh->texture = NULL;
 }
 
 void addTextureToMesh(Mesh *mesh, Texture *texture) { mesh->texture = texture; }
 
 void setBuffersMesh(Mesh *mesh) {
-
+    // bind
   glBindVertexArray(mesh->vao);
 
   glGenVertexArrays(1, &(mesh->ebo));
@@ -49,12 +50,16 @@ void setBuffersMesh(Mesh *mesh) {
                         (void *)(sizeof(f_vec3) * 2));
   glEnableVertexAttribArray(2); // texture coords
 
+  // unbind
   glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
 }
 
 void drawMesh(Mesh *mesh) {
-  glBindTexture(GL_TEXTURE_2D, mesh->texture->id);
+  if (mesh->texture) glBindTexture(GL_TEXTURE_2D, mesh->texture->id);
+
   glBindVertexArray(mesh->vao);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
   glDrawElements(GL_TRIANGLES, mesh->numElements, GL_UNSIGNED_INT, 0);
 }
 
