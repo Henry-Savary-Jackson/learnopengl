@@ -45,7 +45,7 @@
     "-lXi",
     "-ldl",
     "-lcglm",
-    "-lm",
+    "-lm"
   ],
   "C_Cpp_Runner.includePaths": [],
   "C_Cpp_Runner.includeSearch": [

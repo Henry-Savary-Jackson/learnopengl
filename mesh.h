@@ -1,25 +1,15 @@
 #pragma once
 #include "shader_utils.h"
 #include <cglm/cglm.h>
+#include <cglm/types-struct.h>
 #include <cglm/types.h>
 #include <cglm/vec2.h>
 #include <sys/types.h>
 
 typedef struct{
-    float x;
-    float y;
-    float z;
-} f_vec3 ;
-
-typedef  struct{
-    float x;
-    float y;
-} f_vec2 ;
-
-typedef struct{
-    f_vec3 pos;
-    f_vec3 col;
-    f_vec2 texPos;
+    vec3s pos;
+    vec3s col;
+    vec2s texPos;
 }  Vertex ;
 // maybe put __attribute__((packed)) incase of changes
 
@@ -39,13 +29,14 @@ typedef struct {
     int* elementOrder;
     int numElements;
     Texture* texture;
+    int numTextures;
     ShaderProg* shaderProgram;
 } Mesh;
 
 void initMesh(Mesh* mesh, Vertex* vertices,int numVertices, int elements[], int numElements);
 
-void addTextureToMesh(Mesh* mesh, Texture* texture);
-void setShaderProgram(Mesh *mesh, ShaderProg *shaderProgram) ;
+void setTexturesMesh(Mesh* mesh, Texture* texture , int numTextures);
+void setShaderProgramMesh(Mesh *mesh, ShaderProg *shaderProgram) ;
 
 void setBuffersMesh(Mesh* mesh);
 
@@ -56,3 +47,4 @@ void encodeVertexData(Mesh* mesh, float* data);
 void freeMesh(Mesh* mesh);
 
 void drawMesh(Mesh *mesh) ;
+void useShader(Mesh *mesh) ;

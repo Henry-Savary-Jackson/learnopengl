@@ -1,15 +1,20 @@
 #include "mesh.h"
 #include "shader_utils.h"
 #include "textures.h"
-#include <cglm/types.h>
+#include <cglm/affine-pre.h>
+#include <cglm/cglm.h>
+#include <cglm/struct/mat3.h>
+#include <cglm/types-struct.h>
 #include <glad/glad.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <cglm/struct.h>
 #include <string.h>
 
 void initMesh(Mesh *mesh, Vertex *vertices, int numVertices, int elements[],
               int numElements) {
-uint vao  ;
-  glGenVertexArrays(1,&vao );
+  uint vao;
+  glGenVertexArrays(1, &vao);
   mesh->vao = vao;
   mesh->vertices = vertices;
   mesh->numVertices = numVertices;
@@ -17,15 +22,20 @@ uint vao  ;
   mesh->numElements = numElements;
   mesh->texture = NULL;
   mesh->shaderProgram = NULL;
+  setBuffersMesh(mesh);
 }
 
-void addTextureToMesh(Mesh *mesh, Texture *texture) { mesh->texture = texture; }
-void setShaderProgram(Mesh *mesh, ShaderProg *shaderProgram) { mesh->shaderProgram = shaderProgram; }
+void setTexturesMesh(Mesh *mesh, Texture *texture, int numTextures) {
+  mesh->texture = texture;
+  mesh->numTextures = numTextures;
+}
+void setShaderProgramMesh(Mesh *mesh, ShaderProg *shaderProgram) {
+  mesh->shaderProgram = shaderProgram;
+}
 
 void setBuffersMesh(Mesh *mesh) {
   // bind
   glBindVertexArray(mesh->vao);
-
 
   glGenBuffers(1, &(mesh->ebo));
 
@@ -51,12 +61,12 @@ void setBuffersMesh(Mesh *mesh) {
   glEnableVertexAttribArray(0); // vertex pos
 
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                        (void *)sizeof(f_vec3));
+                        (void *)sizeof(vec3s));
   GLenum result = glGetError();
   glEnableVertexAttribArray(1); // color info
 
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                        (void *)(sizeof(f_vec3) * 2));
+                        (void *)(sizeof(vec3s) * 2));
   glEnableVertexAttribArray(2); // texture coords
 
   // unbind
@@ -64,12 +74,25 @@ void setBuffersMesh(Mesh *mesh) {
   glBindVertexArray(0);
 }
 
-void drawMesh(Mesh *mesh) {
-  if (mesh->texture){
-    glBindTexture(GL_TEXTURE_2D, mesh->texture->id);
-  }
-  if (mesh->shaderProgram){
+void useShader(Mesh *mesh) {
+  if (mesh->shaderProgram) {
     useShaderProgram(mesh->shaderProgram);
+  }
+}
+
+
+
+void drawMesh(Mesh *mesh) {
+  if (mesh->texture) {
+    for (int i = 0; i < mesh->numTextures; i++) {
+      glActiveTexture(GL_TEXTURE0 + i);
+      glBindTexture(GL_TEXTURE_2D, mesh->texture[i].id);
+      // set sampler2d uniform
+      char uniformName[strlen("texture") + 3];
+      sprintf(uniformName, "texture%d", i);
+      glUniform1i(glGetUniformLocation(mesh->shaderProgram->id, uniformName),
+                  i);
+    }
   }
 
   glBindVertexArray(mesh->vao);

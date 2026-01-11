@@ -3,10 +3,11 @@ in vec3 color;
 in vec2 texC;
 out vec4 FragColor;
 
-uniform sampler2D ourTexture;
+uniform sampler2D texture0;
+uniform sampler2D texture1;
 uniform float t;
 
 void main()
 {
-    FragColor = texture(ourTexture, texC) * vec4(color *(abs( sin(t)) + 0.6), 1.0) ;
+    FragColor = mix(texture(texture0, texC), texture(texture1, texC) ,0.3*sin(t)+0.4) * vec4(color,1.0f) ;
 } 
