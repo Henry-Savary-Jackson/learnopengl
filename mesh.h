@@ -1,4 +1,5 @@
 #pragma once
+#include "shader_utils.h"
 #include <cglm/cglm.h>
 #include <cglm/types.h>
 #include <cglm/vec2.h>
@@ -38,11 +39,13 @@ typedef struct {
     int* elementOrder;
     int numElements;
     Texture* texture;
+    ShaderProg* shaderProgram;
 } Mesh;
 
 void initMesh(Mesh* mesh, Vertex* vertices,int numVertices, int elements[], int numElements);
 
 void addTextureToMesh(Mesh* mesh, Texture* texture);
+void setShaderProgram(Mesh *mesh, ShaderProg *shaderProgram) ;
 
 void setBuffersMesh(Mesh* mesh);
 
