@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
 #include "stdlib.h"
@@ -43,8 +44,8 @@ void initShaderFromFile(Shader* shader,const char *path) {
   glGetShaderiv(shader->id, GL_COMPILE_STATUS, &result);
   if (!result) {
     printf("Could not compile shader!");
-    return ;
   }
+  assert(result);
 }
 
 void attachShadersToProgram(ShaderProgram* program, Shader shaders[], int length) {
@@ -59,6 +60,7 @@ void attachShadersToProgram(ShaderProgram* program, Shader shaders[], int length
   if (!result) {
     printf("Could not link shader!");
   }
+  assert(result);
 }
 
 

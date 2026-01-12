@@ -18,3 +18,5 @@ void initRenderer(Renderer* renderer, Camera* camera);
 void renderObject(Renderer *renderer, GameObject *object) ;
 
 void freeRenderer(Renderer *renderer) ;
+
+void getModelViewProj(Camera *camera, GameObject *object, mat4 dest) ;

@@ -47,7 +47,10 @@ void rotateCamera(Camera *camera, vec2 rotation) {
   glm_vec2_add(camera->angle.raw, rotation, camera->angle.raw);
   setDirection(camera);
 }
-void setCameraPos(Camera *camera, vec3s newPos) { camera->position = newPos; }
+void setCameraPos(Camera *camera, vec3s newPos) { 
+  camera->position = newPos; 
+}
+
 void setCameraAngles(Camera *camera, vec2s newAngle) {
   camera->angle = newAngle;
   setDirection(camera);

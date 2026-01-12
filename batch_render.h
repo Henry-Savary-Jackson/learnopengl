@@ -25,11 +25,17 @@ typedef struct {
 
   ShaderProgram *shaderProgram;
   Camera *camera;
+
 } BatchRenderer;
 
+
 void initBatchRenderer(BatchRenderer *renderer, Camera *camera,
-                       ShaderProgram *shaderProgram, void *vertexBuffer,
-                       void *modelIndexBuffer, void *modelMatBuffer,
-                       uint maxVertices);
+                       ShaderProgram *shaderProgram, Vertex *vertexBuffer,
+                       uint *modelIndexBuffer, mat4 *modelMatBuffer,
+                       uint maxVertices, uint maxObjects) ;
 
 void flush(BatchRenderer *renderer);
+
+void renderObjectBatch(BatchRenderer *renderer, GameObject *object) ;
+
+void setTexutres(BatchRenderer* renderer, Texture* textures, uint numTextures);

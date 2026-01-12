@@ -6,12 +6,10 @@
 #include <cglm/mat4.h>
 #include <cglm/struct/mat4.h>
 #include <glad/glad.h>
+#include <stdlib.h>
 #include <string.h>
 
-void initRenderer(Renderer *renderer, Camera *camera) {
-  renderer->camera = camera;
-  glGenVertexArrays(1, &(renderer->vao));
-}
+
 
 
 
@@ -61,10 +59,18 @@ void setBuffersRenderer(Renderer *renderer, GameObject *object) {
   glBindVertexArray(0);
 }
 
+void initRenderer(Renderer *renderer, Camera *camera) {
+  renderer->camera = camera;
+  glGenVertexArrays(1, &(renderer->vao));
+}
 void renderObject(Renderer *renderer, GameObject *object) {
 
-  useShaderProgram(object->shaderProgram);
+  // setBuffersRenderer(renderer, object);
+  glBindVertexArray(renderer->vao);
+
   setBuffersRenderer(renderer, object);
+
+  useShaderProgram(object->shaderProgram);
 
 
   if (object->textures)

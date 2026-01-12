@@ -9,7 +9,7 @@
       "stopAtEntry": false,
       "externalConsole": false,
       "cwd": "/home/hsj/Desktop/PROJECTS/learnopengl",
-      "program": "/home/hsj/Desktop/PROJECTS/learnopengl/build/Debug/outDebug",
+      "program": "/home/hsj/Desktop/PROJECTS/learnopengl/build/Release/outRelease",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

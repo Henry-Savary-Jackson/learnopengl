@@ -1,3 +1,3 @@
 #pragma once
 
-#define LENGTH(x) (sizeof(x)/sizeof(x[0])) 
+#define LENGTH(x) (uint)(sizeof(x)/sizeof(x[0])) 

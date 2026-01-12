@@ -11,19 +11,18 @@ typedef struct{
     vec2s texPos;
 }  Vertex ;
 // maybe put __attribute__((packed)) incase of changes
-
 typedef struct{
+    const char* name;
     uint id;
     int width;
     int height;
-    const char* name;
 } Texture;
 
 typedef struct {
-    Vertex* vertices;
-    int numVertices;
-    uint* elementOrder;
     int numElements;
+    int numVertices;
+    Vertex* vertices;
+    uint* elementOrder;
     int numTextures;
 } Mesh;
 
