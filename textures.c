@@ -1,10 +1,11 @@
-#include "shader_utils.h"
+#include "shader.h"
 #include "stb_image.h"
 #include <glad/glad.h>
 #include <GL/glext.h>
 #include <GL/gl.h>
 #include "mesh.h"
 #include <stdio.h>
+#include <string.h>
 
 void initTexture(Texture *texture, const char *name, const char *path) {
 
@@ -41,3 +42,17 @@ void bindTexture(Texture* texture){
 }
 
 void freeTexture(Texture *texture) { glDeleteTextures(1, &(texture->id)); }
+
+void bindTexturesUniform(ShaderProgram *shaderProgram, Texture *textures,
+                         int numTextures) {
+  // set unifroms for all the textures
+  for (int i = 0; i < numTextures; i++) {
+    glActiveTexture(GL_TEXTURE0 + i);
+    glBindTexture(GL_TEXTURE_2D, textures[i].id);
+    // set sampler2d uniform
+    char uniformName[strlen("texture") + 3];
+    sprintf(uniformName, "texture%d", i);
+    uint location = glGetUniformLocation(shaderProgram->id, uniformName);
+    glUniform1i(location, i);
+  }
+}

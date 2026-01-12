@@ -1,1 +1,49 @@
 
+
+#include "object.h"
+#include <cglm/mat4.h>
+#include <stdio.h>
+#include <string.h>
+
+
+void initGameObject(GameObject* object){
+    object->mesh = NULL;
+    object->numTextures = 0;
+    object->textures= NULL;
+    object->shaderProgram = NULL;
+    object->rotation = (vec3s){0,0,0};
+    object->position = (vec3s){0,0,0};
+}
+
+void setMeshGameObject(GameObject* object, Mesh* mesh){
+    object->mesh =mesh;
+}
+
+void setTexturesGameObject(GameObject* object, Texture* textures, int numTextures){
+    object->textures = textures;
+    object->numTextures = numTextures;
+}
+
+void setShaderProgramGameObject(GameObject* object, ShaderProgram* shaderProgram){
+    object->shaderProgram= shaderProgram;
+}
+
+void getModelMatrix(GameObject* object, mat4 dest){
+    mat4 init = GLM_MAT4_IDENTITY_INIT;
+    mat4 yrot = GLM_MAT4_IDENTITY_INIT ;
+    mat4 xrot = GLM_MAT4_IDENTITY_INIT ;
+    glm_mat4_identity(dest);
+    glm_translate(init, object->position.raw);
+    glm_rotate_y(init, object->rotation.x,xrot);
+    glm_rotate_x(xrot, object->rotation.y,yrot);
+    glm_rotate_z(yrot, object->rotation.z,dest);
+}
+
+void rotateGameObject(GameObject* object, vec3 rotation){
+    object->rotation.x= rotation[0];
+    object->rotation.y= rotation[1];
+    object->rotation.z= rotation[2];
+}
+void translateGameObject(GameObject* object, vec3 translation){
+    glm_vec3_add(object->position.raw, translation, object->position.raw);
+}

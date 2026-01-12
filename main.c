@@ -1,6 +1,9 @@
+#include "camera.h"
 #include "config.h"
 #include "mesh.h"
-#include "shader_utils.h"
+#include "object.h"
+#include "render.h"
+#include "shader.h"
 #include "textures.h"
 #include "utils.h"
 #include <glad/glad.h>
@@ -10,108 +13,146 @@
 #include <cglm/mat4.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
+#define debug_impl
+#include "debug.h"
+
+void enableDebugOutput();
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
 }
 
 float vertices[] = {
-    // positions          // colors           // texture coords
-    0.5f,  0.5f,  0.0f, 1.0f, 0.0f, 0.0f, 2.0f, 2.0f, // top right
-    0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 2.0f, 0.0f, // bottom right
-    -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
-    -0.5f, 0.5f,  0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 2.0f  // top left
-};
+    // positions          // texture coords
+    0.5f,  0.5f,  0.5f,  1.0f, 1.0f, -0.5f, 0.5f,  0.5f,  .0f,  1.0f,
+    -0.5f, -0.5f, 0.5f,  .0f,  .0f,  0.5f,  -0.5f, 0.5f,  1.0f, .0f,
+    0.5f,  0.5f,  -0.5f, .0f,  1.0f, -0.5f, 0.5f,  -0.5f, 1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f, 1.0f, .0f,  0.5f,  -0.5f, -0.5f, .0f,  .0f};
 
-int elements[] = {
-    // note that we start from 0!
-    0, 1,
-    3, // first triangle
-    1, 2,
-    3 // second triangle
+float verticesFull[] = {
+    -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 0.5f,  -0.5f, -0.5f,
+    0.0f,  0.0f,  -1.0f, 0.5f,  0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f,
+    0.5f,  0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f, -0.5f, 0.5f,  -0.5f,
+    0.0f,  0.0f,  -1.0f, -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f,
 
-};
+    -0.5f, -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,  0.5f,  -0.5f, 0.5f,
+    0.0f,  0.0f,  1.0f,  0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+    0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  -0.5f, 0.5f,  0.5f,
+    0.0f,  0.0f,  1.0f,  -0.5f, -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,
 
-void APIENTRY glDebugOutput(GLenum source, GLenum type, unsigned int id,
-                            GLenum severity, GLsizei length,
-                            const char *message, const void *userParam) {
-  // ignore non-significant error/warning codes
-  if (id == 131169 || id == 131185 || id == 131218 || id == 131204)
-    return;
+    -0.5f, 0.5f,  0.5f,  -1.0f, 0.0f,  0.0f,  -0.5f, 0.5f,  -0.5f,
+    -1.0f, 0.0f,  0.0f,  -0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,  -0.5f, -0.5f, 0.5f,
+    -1.0f, 0.0f,  0.0f,  -0.5f, 0.5f,  0.5f,  -1.0f, 0.0f,  0.0f,
 
-  printf("---------------\n");
-  printf("Debug message (%d) %s", id, message);
+    0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.5f,  0.5f,  -0.5f,
+    1.0f,  0.0f,  0.0f,  0.5f,  -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,
+    0.5f,  -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,  0.5f,  -0.5f, 0.5f,
+    1.0f,  0.0f,  0.0f,  0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-  switch (source) {
-  case GL_DEBUG_SOURCE_API:
-    printf("Source: API");
-    break;
-  case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
-    printf("Source: Window System");
-    break;
-  case GL_DEBUG_SOURCE_SHADER_COMPILER:
-    printf("Source: Shader Compiler");
-    break;
-  case GL_DEBUG_SOURCE_THIRD_PARTY:
-    printf("Source: Third Party");
-    break;
-  case GL_DEBUG_SOURCE_APPLICATION:
-    printf("Source: Application");
-    break;
-  case GL_DEBUG_SOURCE_OTHER:
-    printf("Source: Other");
-    break;
+    -0.5f, -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,  0.5f,  -0.5f, -0.5f,
+    0.0f,  -1.0f, 0.0f,  0.5f,  -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,
+    0.5f,  -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,  -0.5f, -0.5f, 0.5f,
+    0.0f,  -1.0f, 0.0f,  -0.5f, -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,
+
+    -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.5f,  0.5f,  -0.5f,
+    0.0f,  1.0f,  0.0f,  0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+    0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  -0.5f, 0.5f,  0.5f,
+    0.0f,  1.0f,  0.0f,  -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f};
+
+Vertex verticesUV[] = {
+    -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f,
+    0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+    -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+
+    -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
+    0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+    -0.5f, 0.5f,  0.5f,  0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f,
+
+    -0.5f, 0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+    -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  0.5f,  1.0f, 0.0f,
+
+    0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+    0.5f,  -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 0.0f, 1.0f,
+    0.5f,  -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 1.0f,
+    0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
+    -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+
+    -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+    0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f, 0.5f,  0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f};
+
+uint elements[] = {0, 1, 2, 0, 2, 3, 2, 6, 7, 2, 7, 3, 0, 7, 3, 0, 4, 7,
+                   1, 4, 0, 1, 5, 4, 5, 4, 7, 4, 6, 7, 1, 5, 6, 2, 1, 6};
+
+vec3s camera_pos = {0, 0, 0};
+vec2s camera_angle = {-90, 0};
+float lastX = 400, lastY = 300;
+
+void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
+
+  float xoffset = xpos - lastX;
+  float yoffset =
+      lastY - ypos; // reversed since y-coordinates range from bottom to top
+  lastX = xpos;
+  lastY = ypos;
+
+  const float sensitivity = 0.1f;
+  xoffset *= sensitivity;
+  yoffset *= sensitivity;
+  camera_angle.x += xoffset;
+  camera_angle.y += yoffset;
+
+  camera_angle.y = glm_max(glm_min(camera_angle.y, 90.f), -90.f);
+}
+
+int x = 0;
+int y = 0;
+
+const float cameraSpeed = 0.003f; // adjust accordingly
+float lastTime = 0.f;
+
+float getDetlaTime() {
+  return glfwGetTime();
+  -lastTime;
+}
+
+void pollInput(GLFWwindow *window, Camera *camera) {
+
+  float deltaTime = getDetlaTime();
+
+  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+    moveCameraFront(camera, cameraSpeed * deltaTime);
   }
-  printf("\n");
-
-  switch (type) {
-  case GL_DEBUG_TYPE_ERROR:
-    printf("Type: Error");
-    break;
-  case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-    printf("Type: Deprecated Behaviour");
-    break;
-  case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-    printf("Type: Undefined Behaviour");
-    break;
-  case GL_DEBUG_TYPE_PORTABILITY:
-    printf("Type: Portability");
-    break;
-  case GL_DEBUG_TYPE_PERFORMANCE:
-    printf("Type: Performance");
-    break;
-  case GL_DEBUG_TYPE_MARKER:
-    printf("Type: Marker");
-    break;
-  case GL_DEBUG_TYPE_PUSH_GROUP:
-    printf("Type: Push Group");
-    break;
-  case GL_DEBUG_TYPE_POP_GROUP:
-    printf("Type: Pop Group");
-    break;
-  case GL_DEBUG_TYPE_OTHER:
-    printf("Type: Other");
-    break;
-  };
-  printf("\n");
-
-  switch (severity) {
-  case GL_DEBUG_SEVERITY_HIGH:
-    printf("Severity: high");
-    break;
-  case GL_DEBUG_SEVERITY_MEDIUM:
-    printf("Severity: medium");
-    break;
-  case GL_DEBUG_SEVERITY_LOW:
-    printf("Severity: low");
-    break;
-  case GL_DEBUG_SEVERITY_NOTIFICATION:
-    printf("Severity: notification");
-    break;
+  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+    moveCameraFront(camera, -cameraSpeed * deltaTime);
   }
-  printf("\n\n");
+  if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+    moveCameraSide(camera, -cameraSpeed * deltaTime);
+  }
+  if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+
+    moveCameraSide(camera, cameraSpeed * deltaTime);
+  }
+  if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+    moveCameraVertical(camera, cameraSpeed * deltaTime);
+  }
+  if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+    moveCameraVertical(camera, -cameraSpeed * deltaTime);
+  }
+}
+
+float rand_float(float min, float max) {
+  return min + (max - min) * ((float)random() / (float)RAND_MAX);
 }
 
 int main() {
@@ -138,20 +179,15 @@ int main() {
     return -1;
   }
   // debug enabling
-  int flags;
-  glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
-  if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
-    glEnable(GL_DEBUG_OUTPUT);
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    glDebugMessageCallback(glDebugOutput, NULL);
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL,
-                          GL_TRUE);
-  }
+
+  enableDebugOutput();
 
   glViewport(0, 0, WIDTH, HEIGHT);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  glfwSetCursorPosCallback(window, mouse_callback);
 
-  ShaderProg shaderProgram;
+  ShaderProgram shaderProgram;
   initShaderProgram(&shaderProgram);
   Shader vertexShader = {.type = GL_VERTEX_SHADER};
   Shader fragmentShader = {.type = GL_FRAGMENT_SHADER};
@@ -169,36 +205,74 @@ int main() {
   Texture textures[] = {texture, texture2};
 
   Mesh mesh;
-  initMesh(&mesh, (Vertex *)vertices, (int)(sizeof(vertices) / sizeof(Vertex)),
+  initMesh(&mesh, verticesUV, (int)(sizeof(verticesUV) / sizeof(Vertex)),
            elements, LENGTH(elements));
 
-  setTexturesMesh(&mesh, textures, 2);
-  setShaderProgramMesh(&mesh, &shaderProgram);
+  Camera camera;
+  initCamera(&camera, camera_pos, 90, WIDTH, HEIGHT);
 
+  Renderer renderer;
+  initRenderer(&renderer, &camera);
+
+  srand(10);
+  float bound= 100;
+  int numObjects= 20000;
+  GameObject objects[numObjects];
+  for (int i = 0; i < numObjects; i++) {
+    initGameObject(&objects[i]);
+    setMeshGameObject(&objects[i], &mesh);
+    setShaderProgramGameObject(&objects[i], &shaderProgram);
+    setTexturesGameObject(objects+i, textures, 2);
+
+    vec3s rotation_cube = {
+        rand_float(-70, 180),
+        rand_float(-90, 180),
+        rand_float(-200, 180),
+    };
+    vec3s translate_cube = {rand_float(-bound, bound), rand_float(-bound, bound),
+                            rand_float(-bound , bound)};
+    rotateGameObject(&objects[i], rotation_cube.raw);
+    translateGameObject(&objects[i], translate_cube.raw);
+  }
+
+  glEnable(GL_DEPTH_TEST);
+  // glEnable(GL_CULL_FACE);
+
+  float lastFrameUpdate = 0;
   while (!glfwWindowShouldClose(window)) {
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    float startTime = glfwGetTime();
+    glClearColor(0.2f, 0.4f, 0.4f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    useShader(&mesh);
-    mat4 transform = GLM_MAT4_IDENTITY_INIT;
-    vec4 translation = {0.0, -0.4, 0};
-    mat4 rotated;
-    vec3 axis = {0,0,1};
-    glm_rotate(transform, (float)glfwGetTime(),axis );
-    glm_translate(transform, translation);
-    glUniform1f(glGetUniformLocation(shaderProgram.id, "t"),
-                (float)glfwGetTime());
-    glUniformMatrix4fv(glGetUniformLocation(shaderProgram.id, "transform"), 1,
-                       GL_FALSE, transform[0]);
-    drawMesh(&mesh);
+    float dt = getDetlaTime();
+    vec3 rot_vec = {3.f * dt, 5.f * dt, 2.f * dt};
+    // rotateGameObject(&cube, rot_vec);
+
+    pollInput(window, &camera);
+
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    setCameraDims(&camera, width, height);
+    setCameraAngles(&camera, camera_angle);
+
+    for (int i = 0; i < numObjects; i++) {
+      renderObject(&renderer, &objects[i]);
+    }
 
     glfwSwapBuffers(window);
     glfwPollEvents();
+    lastTime = glfwGetTime();
+    if (lastTime - lastFrameUpdate > 0.1) {
+      lastFrameUpdate = lastTime;
+      float frameTime = (lastTime - startTime);
+      char frameTimeStr[strlen("Time per frame: ") + 5];
+      sprintf(frameTimeStr, "Time per frame: %d", (int)frameTime);
+      glfwSetWindowTitle(window, frameTimeStr);
+    }
   }
 
-  freeMesh(&mesh);
-
   freeShaderProgram(&shaderProgram);
+  freeRenderer(&renderer);
 
   glfwTerminate();
   return 0;

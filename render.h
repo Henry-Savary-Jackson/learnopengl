@@ -10,15 +10,11 @@ typedef struct{
     uint ebo;
     Vertex* vertexBuffer;
     uint* elementBuffer;
-    uint numVertices;
-    uint maxVertexCount;
-    uint numElements;
-    uint maxElements;
     Camera* camera;
-} BatchRenderer ;
+} Renderer ;
 
-void initBatchRenderer(BatchRenderer* renderer, uint maxElements, uint maxVertices);
+void initRenderer(Renderer* renderer, Camera* camera);
 
-void renderObject(BatchRenderer* renderer, GameObject* object);
+void renderObject(Renderer *renderer, GameObject *object) ;
 
-void flush(BatchRenderer* renderer);
+void freeRenderer(Renderer *renderer) ;

@@ -1,12 +1,12 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "stdlib.h"
-#include "shader_utils.h"
+#include "shader.h"
 #include <glad/glad.h>
 #include <GL/gl.h>
 
 
-void initShaderProgram(ShaderProg* shaderProg) {
+void initShaderProgram(ShaderProgram* shaderProg) {
   shaderProg->id = glCreateProgram();
   shaderProg->shaders = NULL; 
 }
@@ -47,7 +47,7 @@ void initShaderFromFile(Shader* shader,const char *path) {
   }
 }
 
-void attachShadersToProgram(ShaderProg* program, Shader shaders[], int length) {
+void attachShadersToProgram(ShaderProgram* program, Shader shaders[], int length) {
   program->shaders = shaders;
   program->num_shaders=length;
   for (int i = 0; i < length; i++) {
@@ -62,8 +62,12 @@ void attachShadersToProgram(ShaderProg* program, Shader shaders[], int length) {
 }
 
 
-void useShaderProgram(ShaderProg* shaderProg){
+void useShaderProgram(ShaderProgram* shaderProg){
   glUseProgram(shaderProg->id);
+}
+
+void unbindShaderProgram(){
+  glUseProgram(0);
 }
 
 
@@ -71,7 +75,7 @@ void freeShader(Shader* shader){
   glDeleteShader(shader->id);
 }
 
-void freeShaderProgram(ShaderProg* shaderProg){
+void freeShaderProgram(ShaderProgram* shaderProg){
   glDeleteProgram(shaderProg->id);
   for (int i =0; i<shaderProg->num_shaders; i++) {
     freeShader(shaderProg->shaders + i);
