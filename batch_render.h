@@ -1,5 +1,6 @@
 #pragma once
 #include "camera.h"
+#include "light.h"
 #include "mesh.h"
 #include "object.h"
 #include "shader.h"
@@ -10,6 +11,10 @@ typedef struct {
   uint vbo;
   uint objectIndexVBO;
   uint ssbo; // store all the model matrices to send to gpu
+
+  uint lightUBO;
+  uint materialUBO;
+  uint viewProjectionUBO;
 
   mat4 *modelMatBuffer;
   uint numObjects;
@@ -26,6 +31,9 @@ typedef struct {
   ShaderProgram *shaderProgram;
   Camera *camera;
 
+  LightSource* light;
+  Material* material;
+
 } BatchRenderer;
 
 
@@ -39,3 +47,6 @@ void flush(BatchRenderer *renderer);
 void renderObjectBatch(BatchRenderer *renderer, GameObject *object) ;
 
 void setTexutres(BatchRenderer* renderer, Texture* textures, uint numTextures);
+
+void setMaterial(BatchRenderer* renderer, Material* material);
+void setLight(BatchRenderer* renderer, LightSource* light);

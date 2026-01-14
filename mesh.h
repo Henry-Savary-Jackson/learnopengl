@@ -9,6 +9,7 @@
 typedef struct{
     vec3s pos;
     vec2s texPos;
+    vec3s normal;
 }  Vertex ;
 // maybe put __attribute__((packed)) incase of changes
 typedef struct{

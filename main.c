@@ -63,10 +63,57 @@ float verticesFull[] = {
     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  -0.5f, 0.5f,  0.5f,
     0.0f,  1.0f,  0.0f,  -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f};
 
-Vertex verticesUV[] = {
-    -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f,
-    0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-    -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+    float verticesNorms[] = {
+          0.0f,  0.0f, -1.0f,
+          0.0f,  0.0f, -1.0f,
+          0.0f,  0.0f, -1.0f,
+          0.0f,  0.0f, -1.0f,
+          0.0f,  0.0f, -1.0f,
+          0.0f,  0.0f, -1.0f,
+
+          0.0f,  0.0f,  1.0f,
+          0.0f,  0.0f,  1.0f,
+        .0f,  0.0f,  1.0f,
+          0.0f,  0.0f,  1.0f,
+          0.0f,  0.0f,  1.0f,
+          0.0f,  0.0f,  1.0f,
+
+         -1.0f,  0.0f,  0.0f,
+         -1.0f,  0.0f,  0.0f,
+         -1.0f,  0.0f,  0.0f,
+         -1.0f,  0.0f,  0.0f,
+         -1.0f,  0.0f,  0.0f,
+        -1.0f,  0.0f,  0.0f,
+
+          1.0f,  0.0f,  0.0f,
+          1.0f,  0.0f,  0.0f,
+          1.0f,  0.0f,  0.0f,
+          1.0f,  0.0f,  0.0f,
+          1.0f,  0.0f,  0.0f,
+          1.0f,  0.0f,  0.0f,
+
+          0.0f, -1.0f,  0.0f,
+          0.0f, -1.0f,  0.0f,
+         0.0f, -1.0f,  0.0f,
+         0.0f, -1.0f,  0.0f,
+         0.0f, -1.0f,  0.0f,
+          0.0f, -1.0f,  0.0f,
+
+         0.0f,  1.0f,  0.0f,
+         0.0f,  1.0f,  0.0f,
+          0.0f,  1.0f,  0.0f,
+          0.0f,  1.0f,  0.0f,
+          0.0f,  1.0f,  0.0f,
+         0.0f,  1.0f,  0.0f
+    };
+
+float verticesUV[] = {
+    -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+     0.5f,  -0.5f, -0.5f, 1.0f, 0.0f,
+    0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+     0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+    -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f,
+     -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
 
     -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
@@ -92,7 +139,7 @@ uint elements[] = {0, 1, 2, 0, 2, 3, 2, 6, 7, 2, 7, 3, 0, 7, 3, 0, 4, 7,
                    1, 4, 0, 1, 5, 4, 5, 4, 7, 4, 6, 7, 1, 5, 6, 2, 1, 6};
 
 Camera *currentCam = NULL;
-vec3s camera_pos = {0, 0, 3};
+vec3s camera_pos = {0, 0, 0};
 vec2s camera_angle = {-90, 0};
 float lastX = 400, lastY = 300;
 
@@ -199,10 +246,21 @@ int main() {
   initShaderProgram(&shaderProgram);
   Shader vertexShader = {.type = GL_VERTEX_SHADER};
   Shader fragmentShader = {.type = GL_FRAGMENT_SHADER};
-  initShaderFromFile(&vertexShader, "./shaders/vertex_batched.glsl");
+  initShaderFromFile(&vertexShader, "./shaders/vertex_batched_lights.glsl");
   initShaderFromFile(&fragmentShader, "./shaders/fragment.glsl");
   Shader shaders[] = {vertexShader, fragmentShader};
   attachShadersToProgram(&shaderProgram, shaders, 2);
+
+
+  ShaderProgram lightShader;
+  initShaderProgram(&lightShader);
+  Shader vertexShaderLight = {.type = GL_VERTEX_SHADER};
+  Shader fragmentShaderLight = {.type = GL_FRAGMENT_SHADER};
+  initShaderFromFile(&vertexShaderLight, "./shaders/vertex.glsl");
+  initShaderFromFile(&fragmentShaderLight, "./shaders/light_source_fragment.glsl");
+  Shader shaderLight[] = {vertexShaderLight, fragmentShaderLight};
+  attachShadersToProgram(&lightShader, shaderLight, 2);
+
 
   Texture texture;
   initTexture(&texture, "container", "./textures/container.jpg");
@@ -212,29 +270,61 @@ int main() {
 
   Texture textures[] = {texture, texture2};
 
+  // put vertices together
+  int numVertices  =36;
+  Vertex vertexData [numVertices];
+  for (int i =0; i < numVertices; i++) {
+    float* destPtr = (float*)vertexData;
+    memcpy(destPtr+i*8, verticesUV+i*5, 20);
+    int offset = 5;
+    memcpy(destPtr+i*8+offset, verticesNorms+i*3, 12);
+  }
+
   Mesh mesh;
-  initMesh(&mesh, verticesUV, LENGTH(verticesUV),
+  initMesh(&mesh, vertexData, LENGTH(vertexData),
            elements, LENGTH(elements));
+
+  LightSource light = {.position=(vec3s){5,2,1}, 
+  .colour=(vec3s){1,0,0.1}, 
+  
+
+  .intensity=100,.pad_1=1000, .pad_2=1000};
+
+  LightObject lightCube = {.light=&light};
+  initGameObject(&lightCube.object);
+  setMeshGameObject(&lightCube.object, &mesh);
+  translateGameObject(&lightCube.object, light.position.raw);
+  setShaderProgramGameObject(&lightCube.object, &lightShader);
 
   Camera camera;
   currentCam = &camera;
   initCamera(&camera, camera_pos, 90, WIDTH, HEIGHT);
 
-  uint maxObjects = 100000;
-  uint maxVertices = 37000000;
+  uint maxObjects = 10;
+  uint maxVertices = 36000;
 
   uint* matIndexBuffer = malloc(maxVertices*sizeof(uint)) ;
   mat4* matBuffer  = malloc(maxObjects*sizeof(mat4)) ;;
   Vertex* vertexBuffer = malloc(maxVertices*sizeof(Vertex));
 
+
+  Material material = {.ambientCoeffient = 0.01, .diffuseCoeffient=1, .specularCoefficient=0.8, .colour={0,10,0}};
+
   BatchRenderer renderer;
 
   initBatchRenderer(&renderer, &camera, &shaderProgram, vertexBuffer, matIndexBuffer, matBuffer, maxVertices, maxObjects);
   setTexutres(&renderer, textures, 2);
+  setMaterial(&renderer, &material);
+  setLight(&renderer, &light);
+
+
+  Renderer lightRenderer;
+  initRenderer(&lightRenderer, &camera);
+  
 
   srand(10);
-  float bound = 300;
-  int numObjects = 100000;
+  float bound = 10;
+  int numObjects = 200;
   GameObject* objects = malloc(numObjects*sizeof(GameObject));
   for (int i = 0; i < numObjects; i++) {
     initGameObject(&objects[i]);
@@ -253,11 +343,9 @@ int main() {
     rotateGameObject(&objects[i], rotation_cube.raw);
     translateGameObject(&objects[i], translate_cube.raw);
   }
-
-  Renderer newRender;
-  initRenderer(&newRender, &camera);
-
-
+  objects[0].position = (vec3s){0,0,-2};
+  objects[0].rotation = (vec3s){0,0,0};
+  // Renderer newRender;
   glEnable(GL_DEPTH_TEST);
 
   float lastFrameUpdate = 0;
@@ -273,6 +361,7 @@ int main() {
       // renderObject(&newRender, objects+i);
     }
     flush(&renderer);
+    renderObject(&lightRenderer, &(lightCube.object));
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -293,6 +382,7 @@ int main() {
   free(matBuffer);
   free(matIndexBuffer);
   freeShaderProgram(&shaderProgram);
+  freeRenderer(&lightRenderer);
 
   glfwTerminate();
   return 0;

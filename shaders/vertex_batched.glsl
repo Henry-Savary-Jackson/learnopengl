@@ -15,6 +15,5 @@ layout (std430, binding = 2) buffer MatArr
 void main()
 {
     texC = texCoord;
-
     gl_Position = vp   * mats[modelIndex]*  vec4(aPos  , 1.0) ;
 }
