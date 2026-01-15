@@ -63,57 +63,29 @@ float verticesFull[] = {
     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  -0.5f, 0.5f,  0.5f,
     0.0f,  1.0f,  0.0f,  -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f};
 
-    float verticesNorms[] = {
-          0.0f,  0.0f, -1.0f,
-          0.0f,  0.0f, -1.0f,
-          0.0f,  0.0f, -1.0f,
-          0.0f,  0.0f, -1.0f,
-          0.0f,  0.0f, -1.0f,
-          0.0f,  0.0f, -1.0f,
+float verticesNorms[] = {
+    0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f,
+    0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f,
 
-          0.0f,  0.0f,  1.0f,
-          0.0f,  0.0f,  1.0f,
-        .0f,  0.0f,  1.0f,
-          0.0f,  0.0f,  1.0f,
-          0.0f,  0.0f,  1.0f,
-          0.0f,  0.0f,  1.0f,
+    0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  .0f,   0.0f,  1.0f,
+    0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
 
-         -1.0f,  0.0f,  0.0f,
-         -1.0f,  0.0f,  0.0f,
-         -1.0f,  0.0f,  0.0f,
-         -1.0f,  0.0f,  0.0f,
-         -1.0f,  0.0f,  0.0f,
-        -1.0f,  0.0f,  0.0f,
+    -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,
+    -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,
 
-          1.0f,  0.0f,  0.0f,
-          1.0f,  0.0f,  0.0f,
-          1.0f,  0.0f,  0.0f,
-          1.0f,  0.0f,  0.0f,
-          1.0f,  0.0f,  0.0f,
-          1.0f,  0.0f,  0.0f,
+    1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+    1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
 
-          0.0f, -1.0f,  0.0f,
-          0.0f, -1.0f,  0.0f,
-         0.0f, -1.0f,  0.0f,
-         0.0f, -1.0f,  0.0f,
-         0.0f, -1.0f,  0.0f,
-          0.0f, -1.0f,  0.0f,
+    0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,
+    0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,
 
-         0.0f,  1.0f,  0.0f,
-         0.0f,  1.0f,  0.0f,
-          0.0f,  1.0f,  0.0f,
-          0.0f,  1.0f,  0.0f,
-          0.0f,  1.0f,  0.0f,
-         0.0f,  1.0f,  0.0f
-    };
+    0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+    0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f};
 
 float verticesUV[] = {
-    -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
-     0.5f,  -0.5f, -0.5f, 1.0f, 0.0f,
-    0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-     0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-    -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f,
-     -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f,
+    0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+    -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
 
     -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
@@ -168,9 +140,7 @@ int y = 0;
 const float cameraSpeed = 3.f; // adjust accordingly
 float lastTime = 0.f;
 
-float getDetlaTime() {
-  return glfwGetTime()  -lastTime;
-}
+float getDetlaTime() { return glfwGetTime() - lastTime; }
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
   if (currentCam) {
@@ -207,8 +177,6 @@ void pollInput(GLFWwindow *window) {
 float rand_float(float min, float max) {
   return min + (max - min) * ((float)random() / (float)RAND_MAX);
 }
-
-
 
 int main() {
 
@@ -247,20 +215,19 @@ int main() {
   Shader vertexShader = {.type = GL_VERTEX_SHADER};
   Shader fragmentShader = {.type = GL_FRAGMENT_SHADER};
   initShaderFromFile(&vertexShader, "./shaders/vertex_batched_lights.glsl");
-  initShaderFromFile(&fragmentShader, "./shaders/fragment.glsl");
+  initShaderFromFile(&fragmentShader, "./shaders/fragment_lights.glsl");
   Shader shaders[] = {vertexShader, fragmentShader};
   attachShadersToProgram(&shaderProgram, shaders, 2);
-
 
   ShaderProgram lightShader;
   initShaderProgram(&lightShader);
   Shader vertexShaderLight = {.type = GL_VERTEX_SHADER};
   Shader fragmentShaderLight = {.type = GL_FRAGMENT_SHADER};
   initShaderFromFile(&vertexShaderLight, "./shaders/vertex.glsl");
-  initShaderFromFile(&fragmentShaderLight, "./shaders/light_source_fragment.glsl");
+  initShaderFromFile(&fragmentShaderLight,
+                     "./shaders/light_source_fragment.glsl");
   Shader shaderLight[] = {vertexShaderLight, fragmentShaderLight};
   attachShadersToProgram(&lightShader, shaderLight, 2);
-
 
   Texture texture;
   initTexture(&texture, "container", "./textures/container.jpg");
@@ -271,61 +238,81 @@ int main() {
   Texture textures[] = {texture, texture2};
 
   // put vertices together
-  int numVertices  =36;
-  Vertex vertexData [numVertices];
-  for (int i =0; i < numVertices; i++) {
-    float* destPtr = (float*)vertexData;
-    memcpy(destPtr+i*8, verticesUV+i*5, 20);
+  int numVertices = 36;
+  Vertex vertexData[numVertices];
+  for (int i = 0; i < numVertices; i++) {
+    float *destPtr = (float *)vertexData;
+    memcpy(destPtr + i * 8, verticesUV + i * 5, 20);
     int offset = 5;
-    memcpy(destPtr+i*8+offset, verticesNorms+i*3, 12);
+    memcpy(destPtr + i * 8 + offset, verticesNorms + i * 3, 12);
   }
+  float bound =12;
 
   Mesh mesh;
-  initMesh(&mesh, vertexData, LENGTH(vertexData),
-           elements, LENGTH(elements));
+  initMesh(&mesh, vertexData, LENGTH(vertexData), elements, LENGTH(elements));
 
-  LightSource light = {.position=(vec3s){5,2,1}, 
-  .colour=(vec3s){1,0,0.1}, 
+  uint numLights = 10;
+
   
 
-  .intensity=100,.pad_1=1000, .pad_2=1000};
+  LightSource lights [numLights];
+  for (int i = 0 ; i < numLights ; i++){
 
-  LightObject lightCube = {.light=&light};
-  initGameObject(&lightCube.object);
-  setMeshGameObject(&lightCube.object, &mesh);
-  translateGameObject(&lightCube.object, light.position.raw);
-  setShaderProgramGameObject(&lightCube.object, &lightShader);
+      lights[i].colour = (vec3s){rand_float(0, 1), rand_float(0, 1), rand_float(0, 1)};
+      lights[i].power = rand_float(10, 50);
+      initGameObject(&lights[i].object);
+      setMeshGameObject(&lights[i].object, &mesh);
+      lights[i].object.position = (vec3s){rand_float(-bound, bound), rand_float(-bound, bound), rand_float(-bound, bound)};
+      translateGameObject(&lights[i].object, (vec3){1,3,2});
+      setShaderProgramGameObject(&lights[i].object, &lightShader);
+  }
 
   Camera camera;
   currentCam = &camera;
   initCamera(&camera, camera_pos, 90, WIDTH, HEIGHT);
 
-  uint maxObjects = 10;
-  uint maxVertices = 36000;
+  uint maxObjects = 50000;
+  uint maxVertices = 1800000;
 
-  uint* matIndexBuffer = malloc(maxVertices*sizeof(uint)) ;
-  mat4* matBuffer  = malloc(maxObjects*sizeof(mat4)) ;;
-  Vertex* vertexBuffer = malloc(maxVertices*sizeof(Vertex));
+  uint *matIndexBuffer = malloc(maxVertices * sizeof(uint));
+  mat4 *matBuffer = malloc(maxObjects * sizeof(mat4));
+  ;
+  Vertex *vertexBuffer = malloc(maxVertices * sizeof(Vertex));
 
-
-  Material material = {.ambientCoeffient = 0.01, .diffuseCoeffient=1, .specularCoefficient=0.8, .colour={0,10,0}};
+  Material material = {.ambientCoeffient = 0.3,
+                       .diffuseCoeffient = 1,
+                       .specularCoefficient = 0.6,
+                       .colour = {0,100, 100}};
 
   BatchRenderer renderer;
+  
+  uint maxObjectsLight = 5000;
+  uint maxVerticesLight = 36 * maxObjectsLight; 
+  uint *lightIndexBuffer = malloc(maxVerticesLight * sizeof(uint));
+  mat4 *lightMatBuffer = malloc(maxObjectsLight * sizeof(mat4));
+  ;
+  Vertex *lightVertexBuffer = malloc(maxVerticesLight * sizeof(Vertex));
 
-  initBatchRenderer(&renderer, &camera, &shaderProgram, vertexBuffer, matIndexBuffer, matBuffer, maxVertices, maxObjects);
+  initBatchRenderer(&renderer, &camera, &shaderProgram, vertexBuffer,
+                    matIndexBuffer,matBuffer, maxVertices, maxObjects, numLights+10);
+  // setTexutres(&renderer, textures, 2);
+  // setMaterial(&renderer, &material);
+  // setLights(&renderer, lights,numLights);
   setTexutres(&renderer, textures, 2);
   setMaterial(&renderer, &material);
-  setLight(&renderer, &light);
+  setLights(&renderer, lights,numLights);
 
 
-  Renderer lightRenderer;
-  initRenderer(&lightRenderer, &camera);
-  
+
+  BatchRenderer lightRenderer;
+  initBatchRenderer(&lightRenderer, &camera, &lightShader, lightVertexBuffer,
+                    lightIndexBuffer, lightMatBuffer,maxVerticesLight, maxObjectsLight,0);
+
+
 
   srand(10);
-  float bound = 10;
-  int numObjects = 200;
-  GameObject* objects = malloc(numObjects*sizeof(GameObject));
+  int numObjects = 300;
+  GameObject *objects = malloc(numObjects * sizeof(GameObject));
   for (int i = 0; i < numObjects; i++) {
     initGameObject(&objects[i]);
     setMeshGameObject(&objects[i], &mesh);
@@ -343,12 +330,16 @@ int main() {
     rotateGameObject(&objects[i], rotation_cube.raw);
     translateGameObject(&objects[i], translate_cube.raw);
   }
-  objects[0].position = (vec3s){0,0,-2};
-  objects[0].rotation = (vec3s){0,0,0};
+  objects[0].position = (vec3s){0, 0, -2};
+  objects[0].rotation = (vec3s){0, 0, 0};
   // Renderer newRender;
   glEnable(GL_DEPTH_TEST);
 
   float lastFrameUpdate = 0;
+
+  useShaderProgram(&lightShader);
+  glUniform3f(glGetUniformLocation(lightShader.id, "lightColour"), lights[0].colour.r, lights[0].colour.g, lights[0].colour.b);
+  unbindShaderProgram();
   while (!glfwWindowShouldClose(window)) {
     float startTime = glfwGetTime();
     glClearColor(0.2f, 0.4f, 0.4f, 1.0f);
@@ -360,19 +351,28 @@ int main() {
       renderObjectBatch(&renderer, &objects[i]);
       // renderObject(&newRender, objects+i);
     }
+
     flush(&renderer);
-    renderObject(&lightRenderer, &(lightCube.object));
+
+    for (int i = 0 ; i < numLights; i ++){
+      rotateGameObjectAround(&(lights[i].object), 180.f * dt,
+                           (vec3){0, 2, 1}, (vec3){4, 2, 3});
+      // renderObjectBatch(&lightRenderer, &(lights[i].object));
+    }
+    // flush(&lightRenderer);
+
 
     glfwSwapBuffers(window);
     glfwPollEvents();
-    pollInput(window );
+    pollInput(window);
     lastTime = glfwGetTime();
 
     if (lastTime - lastFrameUpdate > 0.1) {
       lastFrameUpdate = lastTime;
       float frameTime = (lastTime - startTime);
       char frameTimeStr[strlen("Time per frame: , Frame rate: ") + 15];
-      sprintf(frameTimeStr, "Time per frame: %.5f , Frame rate: %d", frameTime, (int)(1/frameTime));
+      sprintf(frameTimeStr, "Time per frame: %.5f , Frame rate: %d", frameTime,
+              (int)(1 / frameTime));
       glfwSetWindowTitle(window, frameTimeStr);
     }
   }
@@ -382,7 +382,8 @@ int main() {
   free(matBuffer);
   free(matIndexBuffer);
   freeShaderProgram(&shaderProgram);
-  freeRenderer(&lightRenderer);
+  freeShaderProgram(&lightShader);
+  // freeRenderer(&lightRenderer);
 
   glfwTerminate();
   return 0;

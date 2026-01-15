@@ -10,9 +10,9 @@ typedef struct {
   uint vao;
   uint vbo;
   uint objectIndexVBO;
-  uint ssbo; // store all the model matrices to send to gpu
+  uint modelsSSBO; // store all the model matrices to send to gpu
 
-  uint lightUBO;
+  uint lightSSBO;
   uint materialUBO;
   uint viewProjectionUBO;
 
@@ -31,7 +31,10 @@ typedef struct {
   ShaderProgram *shaderProgram;
   Camera *camera;
 
-  LightSource* light;
+  LightSource* lights;
+  uint numLights;
+  uint maxLights;
+
   Material* material;
 
 } BatchRenderer;
@@ -40,7 +43,7 @@ typedef struct {
 void initBatchRenderer(BatchRenderer *renderer, Camera *camera,
                        ShaderProgram *shaderProgram, Vertex *vertexBuffer,
                        uint *modelIndexBuffer, mat4 *modelMatBuffer,
-                       uint maxVertices, uint maxObjects) ;
+                       uint maxVertices, uint maxObjects, uint maxLights) ;
 
 void flush(BatchRenderer *renderer);
 
@@ -49,4 +52,4 @@ void renderObjectBatch(BatchRenderer *renderer, GameObject *object) ;
 void setTexutres(BatchRenderer* renderer, Texture* textures, uint numTextures);
 
 void setMaterial(BatchRenderer* renderer, Material* material);
-void setLight(BatchRenderer* renderer, LightSource* light);
+void setLights(BatchRenderer* renderer, LightSource* lights, uint numLights);

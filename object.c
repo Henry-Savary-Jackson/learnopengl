@@ -2,6 +2,7 @@
 
 #include "object.h"
 #include <cglm/mat4.h>
+#include <cglm/vec4.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -46,4 +47,10 @@ void rotateGameObject(GameObject* object, vec3 rotation){
 }
 void translateGameObject(GameObject* object, vec3 translation){
     glm_vec3_add(object->position.raw, translation, object->position.raw);
+}
+
+void rotateGameObjectAround(GameObject* object, float angle, vec3 axis , vec3 pivot){
+    mat4 result= GLM_MAT4_IDENTITY_INIT;
+    glm_rotate_at(result, pivot ,  angle, axis);
+    glm_mat4_mulv3(result, object->position.raw, 1, object->position.raw);
 }

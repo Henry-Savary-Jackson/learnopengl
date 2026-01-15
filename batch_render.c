@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
-const uint UNIFORM_LIGHT_BINDING = 0;
+const uint SHADER_BUFFER_LIGHT_BINDING = 0;
 const uint UNIFORM_VIEW_PROJ_BINDING = 1;
 const uint UNIFORM_MATERIAL_BINDING = 2;
 const uint SHADER_BUFFER_MODELS_BIND = 3;
@@ -57,41 +57,43 @@ void setUpBuffers(BatchRenderer *renderer) {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
   // Generate Shader Storage Buffer object for pass trasnformation matrices
-  glGenBuffers(1, &(renderer->ssbo));
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, renderer->ssbo);
+  glGenBuffers(1, &(renderer->modelsSSBO));
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, renderer->modelsSSBO);
   // set and bind this buffer
   glBufferData(GL_SHADER_STORAGE_BUFFER,
                sizeof(mat4) * renderer->maxObjectCount, NULL, GL_DYNAMIC_DRAW);
 
-  // uint modelBlockIndex=glGetProgramResourceIndex(renderer->shaderProgram->id ,GL_SHADER_STORAGE_BLOCK, "ModelTransforms");
-  // glUniformBlockBinding(renderer->shaderProgram->id, modelBlockIndex,
-                        // SHADER_BUFFER_MODELS_BIND);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SHADER_BUFFER_MODELS_BIND, renderer->ssbo);
-
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-  // generate UBOs
+  // TODO: make this so i dont need to specify binding in shaders
+  uint modelsIndex = glGetProgramResourceIndex(renderer->shaderProgram->id, GL_SHADER_STORAGE_BLOCK , "ModelTransforms");
+  if (modelsIndex != GL_INVALID_INDEX){
+    glShaderStorageBlockBinding(renderer->shaderProgram->id, modelsIndex, SHADER_BUFFER_MODELS_BIND);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SHADER_BUFFER_MODELS_BIND,renderer->modelsSSBO );
+  }
 
   // light source uniform
-  glGenBuffers(1, &(renderer->lightUBO));
-  glBindBuffer(GL_UNIFORM_BUFFER, renderer->lightUBO);
-  glBufferData(GL_UNIFORM_BUFFER, sizeof(LightSource), NULL, GL_DYNAMIC_DRAW);
-  uint lightBlockIndex =
-      glGetUniformBlockIndex(renderer->shaderProgram->id, "Light");
-  glUniformBlockBinding(renderer->shaderProgram->id, lightBlockIndex,
-                        UNIFORM_LIGHT_BINDING);
-  glBindBufferBase(GL_UNIFORM_BUFFER, UNIFORM_LIGHT_BINDING,
-                   renderer->lightUBO);
+  glGenBuffers(1, &(renderer->lightSSBO));
+  if (renderer->maxLights) {
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, renderer->lightSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER,
+                 sizeof(LightData) * renderer->maxLights,
+                 NULL, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SHADER_BUFFER_LIGHT_BINDING,
+                     renderer->lightSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  }
 
   glGenBuffers(1, &(renderer->materialUBO));
   glBindBuffer(GL_UNIFORM_BUFFER, renderer->materialUBO);
   glBufferData(GL_UNIFORM_BUFFER, sizeof(Material), NULL, GL_DYNAMIC_DRAW);
+
   uint materialBlockIndex =
       glGetUniformBlockIndex(renderer->shaderProgram->id, "Material");
-  glUniformBlockBinding(renderer->shaderProgram->id, lightBlockIndex,
-                        UNIFORM_MATERIAL_BINDING);
-  glBindBufferBase(GL_UNIFORM_BUFFER, UNIFORM_MATERIAL_BINDING,
+  if (materialBlockIndex != GL_INVALID_INDEX){
+    glUniformBlockBinding(renderer->shaderProgram->id, materialBlockIndex,
+                          UNIFORM_MATERIAL_BINDING);
+    glBindBufferBase(GL_UNIFORM_BUFFER, UNIFORM_MATERIAL_BINDING,
                    renderer->materialUBO);
+  }
 
   // setup the ubo
   glGenBuffers(1, &(renderer->viewProjectionUBO));
@@ -100,6 +102,7 @@ void setUpBuffers(BatchRenderer *renderer) {
   // get the block index in the shader program
   uint viewProjBlockIndex =
       glGetUniformBlockIndex(renderer->shaderProgram->id, "ViewProjection");
+  if (viewProjBlockIndex != GL_INVALID_INDEX){
   // link block index to binding point
   glUniformBlockBinding(renderer->shaderProgram->id, viewProjBlockIndex,
                         UNIFORM_VIEW_PROJ_BINDING);
@@ -107,8 +110,10 @@ void setUpBuffers(BatchRenderer *renderer) {
   glBindBufferBase(GL_UNIFORM_BUFFER, UNIFORM_VIEW_PROJ_BINDING,
                    renderer->viewProjectionUBO);
 
-  // unbind
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+  }
+  // unbind
 
   glBindVertexArray(0);
 }
@@ -116,9 +121,10 @@ void setUpBuffers(BatchRenderer *renderer) {
 void initBatchRenderer(BatchRenderer *renderer, Camera *camera,
                        ShaderProgram *shaderProgram, Vertex *vertexBuffer,
                        uint *modelIndexBuffer, mat4 *modelMatBuffer,
-                       uint maxVertices, uint maxObjects) {
+                       uint maxVertices, uint maxObjects, uint maxLights) {
   renderer->maxVertexCount = maxVertices;
   renderer->maxObjectCount = maxObjects;
+  renderer->maxLights = maxLights;
   renderer->camera = camera;
   renderer->vertexBuffer = vertexBuffer;
   renderer->modelMatBuffer = modelMatBuffer;
@@ -126,8 +132,9 @@ void initBatchRenderer(BatchRenderer *renderer, Camera *camera,
   renderer->numObjects = 0;
   renderer->numVertices = 0;
   renderer->numTextures = 0;
+  renderer->numLights = 0;
   renderer->textures = NULL;
-  renderer->light = NULL;
+  renderer->lights = NULL;
   renderer->material = NULL;
   renderer->shaderProgram = shaderProgram;
   glGenVertexArrays(1, &(renderer->vao));
@@ -137,8 +144,9 @@ void initBatchRenderer(BatchRenderer *renderer, Camera *camera,
 void setMaterial(BatchRenderer *renderer, Material *material) {
   renderer->material = material;
 }
-void setLight(BatchRenderer *renderer, LightSource *light) {
-  renderer->light = light;
+void setLights(BatchRenderer *renderer, LightSource *lights, uint numLights) {
+  renderer->lights = lights;
+  renderer->numLights = numLights;
 }
 
 void setTexutres(BatchRenderer *renderer, Texture *textures, uint numTextures) {
@@ -149,7 +157,6 @@ void setTexutres(BatchRenderer *renderer, Texture *textures, uint numTextures) {
 void flush(BatchRenderer *renderer) {
   if (renderer->numObjects == 0 || renderer->numVertices == 0)
     return;
-
 
   // buffer to store view and projection matrices
   mat4 viewProjBuffer[2];
@@ -165,14 +172,7 @@ void flush(BatchRenderer *renderer) {
 
   useShaderProgram(shaderProgram);
 
-
-  vec3s lightPos = renderer->light->position;
-  vec3s lightCol = renderer->light->colour;
-  glUniform3f(glGetUniformLocation(shaderProgram->id, "lightPos"), lightPos.x, lightPos.y, lightPos.z );
-  glUniform3f(glGetUniformLocation(shaderProgram->id, "lightColour"), lightCol.r, lightPos.g, lightCol.b );
-
   bindTexturesUniform(shaderProgram, renderer->textures, renderer->numTextures);
-
   // pass view and projection matrices to shader
 
   // start drawing contents in vao's buffers
@@ -184,14 +184,18 @@ void flush(BatchRenderer *renderer) {
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(uint) * renderer->numVertices,
                   renderer->objectIndexBuffer);
 
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, renderer->ssbo);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, renderer->modelsSSBO);
   glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0,
                   sizeof(mat4) * renderer->numObjects,
                   renderer->modelMatBuffer);
 
-  if (renderer->light) {
-    glBindBuffer(GL_UNIFORM_BUFFER, renderer->lightUBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(LightSource), renderer->light);
+  if (renderer->lights) {
+    glBindBuffer(GL_UNIFORM_BUFFER, renderer->lightSSBO);
+    LightData lightData[renderer->numLights ];
+    encodeLights(renderer->lights, renderer->numLights, viewProjBuffer[0],
+                 lightData);
+    glUniform1ui(glGetUniformLocation(shaderProgram->id, "numLights"), renderer->numLights);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(lightData), lightData);
   }
 
   if (renderer->material) {
@@ -200,7 +204,8 @@ void flush(BatchRenderer *renderer) {
   }
 
   glBindBuffer(GL_UNIFORM_BUFFER, renderer->viewProjectionUBO);
-  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(viewProjBuffer),viewProjBuffer[0]);
+  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(viewProjBuffer),
+                  viewProjBuffer[0]);
 
   // how to draw permanently
   glDrawArrays(GL_TRIANGLES, 0, renderer->numVertices);
@@ -242,7 +247,7 @@ void renderObjectBatch(BatchRenderer *renderer, GameObject *object) {
   // add current index to all vertices in index vbo
   for (int i = 0; i < object->mesh->numVertices; i++) {
     renderer->objectIndexBuffer[i + renderer->numVertices] =
-        renderer->numObjects ;
+        renderer->numObjects;
   }
   // renderer->numObjects;
 

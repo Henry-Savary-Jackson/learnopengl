@@ -1,27 +1,13 @@
 
 #include <cglm/types-struct.h>
+#include <stdalign.h>
 #include "object.h"
-typedef struct {
-    vec3s position;
-    float pad_1;
-    vec3s colour;
-    float pad_2;
-    float intensity;
-} LightSource;
 
-typedef struct {
-    float ambientCoeffient;
-    float diffuseCoeffient;
-    float specularCoefficient;
-    float __padd_1;
-    vec3s colour;
-    float __padd_2;
-} Material;
+typedef struct  {
+    vec3 positionCamera; // relative to camera
+    alignas(16)vec3 colour;
+    alignas(16) float power;
+} LightData;
+// alignas is to ensure it fits with def in shader that uses std140
 
-typedef struct{
-    GameObject object;
-    LightSource* light;
-} LightObject;
-
-
-
+void encodeLights(LightSource* lights, uint numLights, mat4 view, LightData* dest);
