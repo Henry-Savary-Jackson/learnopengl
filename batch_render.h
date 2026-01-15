@@ -1,6 +1,7 @@
 #pragma once
-#include "camera.h"
 #include "light.h"
+#include "global_info.h"
+#include "camera.h"
 #include "mesh.h"
 #include "object.h"
 #include "shader.h"
@@ -8,48 +9,23 @@
 
 typedef struct {
   uint vao;
-  uint vbo;
+  uint vertexVbo;
   uint objectIndexVBO;
-  uint modelsSSBO; // store all the model matrices to send to gpu
 
-  uint lightSSBO;
-  uint materialUBO;
-  uint viewProjectionUBO;
-
-  mat4 *modelMatBuffer;
-  uint numObjects;
-  uint maxObjectCount;
+  TransformationMatrixManager* transformManager; 
 
   Vertex *vertexBuffer;
   uint *objectIndexBuffer;
   uint numVertices;
   uint maxVertexCount;
-
-  Texture *textures;
-  uint numTextures;
-
-  ShaderProgram *shaderProgram;
-  Camera *camera;
-
-  LightSource* lights;
-  uint numLights;
-  uint maxLights;
-
-  Material* material;
-
 } BatchRenderer;
 
-
-void initBatchRenderer(BatchRenderer *renderer, Camera *camera,
-                       ShaderProgram *shaderProgram, Vertex *vertexBuffer,
-                       uint *modelIndexBuffer, mat4 *modelMatBuffer,
-                       uint maxVertices, uint maxObjects, uint maxLights) ;
+void initBatchRenderer(BatchRenderer *renderer, TransformationMatrixManager* transformMatrixManager,
+                       uint maxVertices) ;
 
 void flush(BatchRenderer *renderer);
 
 void renderObjectBatch(BatchRenderer *renderer, GameObject *object) ;
 
-void setTexutres(BatchRenderer* renderer, Texture* textures, uint numTextures);
+void freeBatchRenderer(BatchRenderer *renderer) ;
 
-void setMaterial(BatchRenderer* renderer, Material* material);
-void setLights(BatchRenderer* renderer, LightSource* lights, uint numLights);

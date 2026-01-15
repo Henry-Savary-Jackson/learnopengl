@@ -46,6 +46,7 @@ void freeTexture(Texture *texture) { glDeleteTextures(1, &(texture->id)); }
 void bindTexturesUniform(ShaderProgram *shaderProgram, Texture *textures,
                          int numTextures) {
   // set unifroms for all the textures
+  useShaderProgram(shaderProgram);
   for (int i = 0; i < numTextures; i++) {
     glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, textures[i].id);
@@ -55,4 +56,5 @@ void bindTexturesUniform(ShaderProgram *shaderProgram, Texture *textures,
     uint location = glGetUniformLocation(shaderProgram->id, uniformName);
     glUniform1i(location, i);
   }
+  unbindShaderProgram();
 }

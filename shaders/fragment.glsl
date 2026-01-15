@@ -17,9 +17,6 @@ layout ( std140) uniform Material{
     vec4 colour;
 } material;
 
-
-uniform vec3 lightColour;
-
 layout (std140) uniform Light{
     vec4 position;
     vec4 colour;

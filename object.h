@@ -10,6 +10,8 @@ typedef struct {
     alignas(16 )vec3s colour;
 } Material;
 
+
+
 typedef struct{
     vec3s rotation;
     vec3s position;

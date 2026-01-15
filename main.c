@@ -1,5 +1,6 @@
 #include "batch_render.h"
 #include "camera.h"
+#include "global_info.h"
 #include "config.h"
 #include "mesh.h"
 #include "object.h"
@@ -214,20 +215,20 @@ int main() {
   initShaderProgram(&shaderProgram);
   Shader vertexShader = {.type = GL_VERTEX_SHADER};
   Shader fragmentShader = {.type = GL_FRAGMENT_SHADER};
-  initShaderFromFile(&vertexShader, "./shaders/vertex_batched_lights.glsl");
+  initShaderFromFile(&vertexShader, "./shaders/vertex_batched_with_lights.glsl");
   initShaderFromFile(&fragmentShader, "./shaders/fragment_lights.glsl");
   Shader shaders[] = {vertexShader, fragmentShader};
   attachShadersToProgram(&shaderProgram, shaders, 2);
 
-  ShaderProgram lightShader;
-  initShaderProgram(&lightShader);
+  ShaderProgram lightShaderProgram;
+  initShaderProgram(&lightShaderProgram);
   Shader vertexShaderLight = {.type = GL_VERTEX_SHADER};
   Shader fragmentShaderLight = {.type = GL_FRAGMENT_SHADER};
-  initShaderFromFile(&vertexShaderLight, "./shaders/vertex.glsl");
+  initShaderFromFile(&vertexShaderLight, "./shaders/vertex_batched_for_lights.glsl");
   initShaderFromFile(&fragmentShaderLight,
                      "./shaders/light_source_fragment.glsl");
   Shader shaderLight[] = {vertexShaderLight, fragmentShaderLight};
-  attachShadersToProgram(&lightShader, shaderLight, 2);
+  attachShadersToProgram(&lightShaderProgram, shaderLight, 2);
 
   Texture texture;
   initTexture(&texture, "container", "./textures/container.jpg");
@@ -246,14 +247,12 @@ int main() {
     int offset = 5;
     memcpy(destPtr + i * 8 + offset, verticesNorms + i * 3, 12);
   }
-  float bound =12;
+  float bound =10;
 
   Mesh mesh;
   initMesh(&mesh, vertexData, LENGTH(vertexData), elements, LENGTH(elements));
 
-  uint numLights = 10;
-
-  
+  uint numLights = 50;
 
   LightSource lights [numLights];
   for (int i = 0 ; i < numLights ; i++){
@@ -263,8 +262,8 @@ int main() {
       initGameObject(&lights[i].object);
       setMeshGameObject(&lights[i].object, &mesh);
       lights[i].object.position = (vec3s){rand_float(-bound, bound), rand_float(-bound, bound), rand_float(-bound, bound)};
-      translateGameObject(&lights[i].object, (vec3){1,3,2});
-      setShaderProgramGameObject(&lights[i].object, &lightShader);
+      // translateGameObject(&lights[i].object, (vec3){1,3,2});
+      // setShaderProgramGameObject(&lights[i].object, &lightShaderProgram);
   }
 
   Camera camera;
@@ -274,44 +273,42 @@ int main() {
   uint maxObjects = 50000;
   uint maxVertices = 1800000;
 
-  uint *matIndexBuffer = malloc(maxVertices * sizeof(uint));
-  mat4 *matBuffer = malloc(maxObjects * sizeof(mat4));
-  ;
-  Vertex *vertexBuffer = malloc(maxVertices * sizeof(Vertex));
 
-  Material material = {.ambientCoeffient = 0.3,
-                       .diffuseCoeffient = 1,
-                       .specularCoefficient = 0.6,
-                       .colour = {0,100, 100}};
+  Material material = {.ambientCoeffient = 1,
+                       .diffuseCoeffient = 0.2,
+                       .specularCoefficient = 0.4,
+                       .colour = {1,0,0}};
+
+  MaterialManager materialManager;
+  initMaterialManager(&materialManager);
+  setMaterialManagerMaterial(&materialManager, &material);
+
+
+  uint maxObjectsLight = numLights+ 1000;
+  LightInfoManager lightManager;
+  initLightInfoManager(&lightManager, maxObjectsLight);
+
+  TransformationMatrixManager transformManager;
+  initTransformMatrixManager(&transformManager, maxObjects);
+
+  ProjectionManager projectionManager;
+  initProjectionMatrixManager(&projectionManager);
 
   BatchRenderer renderer;
   
-  uint maxObjectsLight = 5000;
   uint maxVerticesLight = 36 * maxObjectsLight; 
-  uint *lightIndexBuffer = malloc(maxVerticesLight * sizeof(uint));
-  mat4 *lightMatBuffer = malloc(maxObjectsLight * sizeof(mat4));
   ;
-  Vertex *lightVertexBuffer = malloc(maxVerticesLight * sizeof(Vertex));
 
-  initBatchRenderer(&renderer, &camera, &shaderProgram, vertexBuffer,
-                    matIndexBuffer,matBuffer, maxVertices, maxObjects, numLights+10);
-  // setTexutres(&renderer, textures, 2);
-  // setMaterial(&renderer, &material);
-  // setLights(&renderer, lights,numLights);
-  setTexutres(&renderer, textures, 2);
-  setMaterial(&renderer, &material);
-  setLights(&renderer, lights,numLights);
-
-
+  initBatchRenderer(&renderer, &transformManager ,
+                     maxVertices);
 
   BatchRenderer lightRenderer;
-  initBatchRenderer(&lightRenderer, &camera, &lightShader, lightVertexBuffer,
-                    lightIndexBuffer, lightMatBuffer,maxVerticesLight, maxObjectsLight,0);
 
-
+  initBatchRenderer(&lightRenderer, &transformManager ,
+                     maxVerticesLight);
 
   srand(10);
-  int numObjects = 300;
+  int numObjects = 600;
   GameObject *objects = malloc(numObjects * sizeof(GameObject));
   for (int i = 0; i < numObjects; i++) {
     initGameObject(&objects[i]);
@@ -337,34 +334,66 @@ int main() {
 
   float lastFrameUpdate = 0;
 
-  useShaderProgram(&lightShader);
-  glUniform3f(glGetUniformLocation(lightShader.id, "lightColour"), lights[0].colour.r, lights[0].colour.g, lights[0].colour.b);
-  unbindShaderProgram();
+  // bind the manager to send global shader info
+  bindLightInfoManager(&lightManager,  &shaderProgram);
+
+  setMaterialManagerMaterial(&materialManager, &material);
+  bindMaterialManagerShader(&materialManager, &shaderProgram);
+  flushMaterialManager(&materialManager);
+
+  bindProjectionManagerShader(&projectionManager, &shaderProgram);
+
+  bindTexturesUniform(&shaderProgram, textures, 2);
+  bindTransformMatrixManager(&transformManager, &shaderProgram);
+
+  bindProjectionManagerShader( &projectionManager,&lightShaderProgram);
+  // useShaderProgram(&lightShaderProgram);
+  // glUniform3f(glGetUniformLocation(lightShaderProgram.id, "lightColour"), lights[0].colour.r, lights[0].colour.g, lights[0].colour.b);
+  // unbindShaderProgram();
+
+  bindTransformMatrixManager(&transformManager, &lightShaderProgram);
+
+  // setProjectionMatrixManager(&projectionManager, &camera);
   while (!glfwWindowShouldClose(window)) {
     float startTime = glfwGetTime();
     glClearColor(0.2f, 0.4f, 0.4f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    float dt = getDetlaTime();
+    // add projection matrices
+    setProjectionMatrixManager(&projectionManager, &camera);
+    
+    addLightsToManager(&lightManager, lights, numLights, projectionManager.projectionBuffer->viewMatrix);
+    flushLightManager(&lightManager);
+    // send GPU 
+    flushProjectionMatrixManager(&projectionManager);
+     // transform manager is flushed by the batched renderer
+    useShaderProgram(&shaderProgram);
 
     for (int i = 0; i < numObjects; i++) {
       renderObjectBatch(&renderer, &objects[i]);
-      // renderObject(&newRender, objects+i);
     }
 
     flush(&renderer);
 
+    // add light information 
+    useShaderProgram(&lightShaderProgram);
+    flushTransformationManager(&transformManager);
+
     for (int i = 0 ; i < numLights; i ++){
+      float dt = getDetlaTime();
       rotateGameObjectAround(&(lights[i].object), 180.f * dt,
                            (vec3){0, 2, 1}, (vec3){4, 2, 3});
-      // renderObjectBatch(&lightRenderer, &(lights[i].object));
+      renderObjectBatch(&renderer, &(lights[i].object));
     }
-    // flush(&lightRenderer);
+    flush(&renderer);
 
+    unbindShaderProgram();
 
     glfwSwapBuffers(window);
     glfwPollEvents();
     pollInput(window);
+
+    // performance tracking
     lastTime = glfwGetTime();
 
     if (lastTime - lastFrameUpdate > 0.1) {
@@ -377,12 +406,16 @@ int main() {
     }
   }
 
-  free(vertexBuffer);
   free(objects);
-  free(matBuffer);
-  free(matIndexBuffer);
+  freeTexture(&texture);
+  freeLightManager(&lightManager);
+  freeMaterialManager(&materialManager);
+  freeTransformMatrixManager(&transformManager);
+  freeProjectionManager(&projectionManager);
+  freeBatchRenderer(&renderer);
+  freeBatchRenderer(&lightRenderer);
   freeShaderProgram(&shaderProgram);
-  freeShaderProgram(&lightShader);
+  freeShaderProgram(&lightShaderProgram);
   // freeRenderer(&lightRenderer);
 
   glfwTerminate();

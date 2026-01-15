@@ -1,4 +1,4 @@
-
+#pragma  once
 #include <cglm/types-struct.h>
 #include <stdalign.h>
 #include "object.h"
@@ -8,6 +8,6 @@ typedef struct  {
     alignas(16)vec3 colour;
     alignas(16) float power;
 } LightData;
-// alignas is to ensure it fits with def in shader that uses std140
+// alignas is to ensure it fits with def in shader that uses std430 
 
 void encodeLights(LightSource* lights, uint numLights, mat4 view, LightData* dest);

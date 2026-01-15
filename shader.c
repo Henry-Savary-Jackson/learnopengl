@@ -15,10 +15,11 @@ void initShaderProgram(ShaderProgram* shaderProg) {
 void initShaderFromFile(Shader* shader,const char *path) {
   FILE *fd = fopen(path, "r");
 
+
   if (fd == NULL) {
     printf("Could not read file %s", path);
-    return ;
   }
+  assert(fd);
 
   fseek(fd, 0L, SEEK_END);
   long length = ftell(fd);
