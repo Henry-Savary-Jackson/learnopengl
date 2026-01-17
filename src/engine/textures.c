@@ -1,9 +1,9 @@
-#include "shader.h"
-#include "stb_image.h"
+#include <learnopengl/engine/shader.h>
+#include <learnopengl/utils/stb_image.h>
 #include <glad/glad.h>
 #include <GL/glext.h>
 #include <GL/gl.h>
-#include "mesh.h"
+#include <learnopengl/engine/mesh.h>
 #include <stdio.h>
 #include <string.h>
 

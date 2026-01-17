@@ -1,4 +1,4 @@
-#include "camera.h"
+#include <learnopengl/engine/camera.h>
 #include <cglm/cam.h>
 #include <cglm/cglm.h>
 #include <cglm/struct/vec2.h>

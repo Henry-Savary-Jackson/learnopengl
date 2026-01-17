@@ -1,14 +1,14 @@
-#include "light.h"
+#include <learnopengl/engine/light.h>
 #include <cglm/vec3.h>
 
 // encode the information on scene lights so that the opengl UBO can read them
 void encodeLights(LightSource* lights, uint numLights, mat4 view, LightData* dest){
     // make usre to align them as such
-    // 0  pos.x 
+    // 0  pos.x
     // 4  pos.y
     // 8  pos.z
     // 12
-    // 16 col.r  
+    // 16 col.r
     // 20 col.g
     // 24 col.b
     // 28 power

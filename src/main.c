@@ -1,13 +1,13 @@
-#include "batch_render.h"
-#include "camera.h"
-#include "global_info.h"
-#include "config.h"
-#include "mesh.h"
-#include "object.h"
-#include "render.h"
-#include "shader.h"
-#include "textures.h"
-#include "utils.h"
+#include <learnopengl/engine/batch_render.h>
+#include <learnopengl/engine/camera.h>
+#include <learnopengl/engine/global_info.h>
+#include <learnopengl/config.h>
+#include <learnopengl/engine/mesh.h>
+#include <learnopengl/engine/object.h>
+#include <learnopengl/engine/render.h>
+#include <learnopengl/engine/shader.h>
+#include <learnopengl/engine/textures.h>
+#include <learnopengl/utils/utils.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cglm/affine-post.h>
@@ -19,10 +19,10 @@
 #include <string.h>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include <learnopengl/utils/stb_image.h>
 
 #define debug_impl
-#include "debug.h"
+#include <learnopengl/utils/debug.h>
 
 void enableDebugOutput();
 
@@ -295,8 +295,8 @@ int main() {
   initProjectionMatrixManager(&projectionManager);
 
   BatchRenderer renderer;
-  
-  uint maxVerticesLight = 36 * maxObjectsLight; 
+
+  uint maxVerticesLight = 36 * maxObjectsLight;
   ;
 
   initBatchRenderer(&renderer, &transformManager ,
@@ -361,10 +361,10 @@ int main() {
 
     // add projection matrices
     setProjectionMatrixManager(&projectionManager, &camera);
-    
+
     addLightsToManager(&lightManager, lights, numLights, projectionManager.projectionBuffer->viewMatrix);
     flushLightManager(&lightManager);
-    // send GPU 
+    // send GPU
     flushProjectionMatrixManager(&projectionManager);
      // transform manager is flushed by the batched renderer
     useShaderProgram(&shaderProgram);
@@ -375,7 +375,7 @@ int main() {
 
     flush(&renderer);
 
-    // add light information 
+    // add light information
     useShaderProgram(&lightShaderProgram);
     flushTransformationManager(&transformManager);
 

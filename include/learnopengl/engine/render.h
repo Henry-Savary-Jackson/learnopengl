@@ -1,7 +1,7 @@
 
-#include "camera.h"
-#include "mesh.h"
-#include "object.h"
+#include <learnopengl/engine/camera.h>
+#include <learnopengl/engine/mesh.h>
+#include <learnopengl/engine/object.h>
 #include <sys/types.h>
 
 typedef struct{

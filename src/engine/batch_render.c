@@ -1,7 +1,7 @@
-#include "batch_render.h"
-#include "global_info.h"
-#include "mesh.h"
-#include "render.h"
+#include <learnopengl/engine/batch_render.h>
+#include <learnopengl/engine/global_info.h>
+#include <learnopengl/engine/mesh.h>
+#include <learnopengl/engine/render.h>
 #include <cglm/mat4.h>
 #include <cglm/types.h>
 #include <glad/glad.h>

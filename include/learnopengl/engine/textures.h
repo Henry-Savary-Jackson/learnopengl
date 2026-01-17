@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mesh.h"
+#include <learnopengl/engine/mesh.h>
 
 
 void bindTexturesUniform(ShaderProgram *shaderProgram, Texture *textures,

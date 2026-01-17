@@ -1,8 +1,8 @@
 
 #pragma once
 
-#include "mesh.h"
-#include "shader.h"
+#include <learnopengl/engine/mesh.h>
+#include <learnopengl/engine/shader.h>
 typedef struct {
     float ambientCoeffient;
     float diffuseCoeffient;

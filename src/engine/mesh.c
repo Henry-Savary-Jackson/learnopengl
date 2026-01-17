@@ -1,4 +1,4 @@
-#include "mesh.h"
+#include <learnopengl/engine/mesh.h>
 #include <cglm/affine-pre.h>
 #include <cglm/cglm.h>
 #include <cglm/struct/mat3.h>

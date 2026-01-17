@@ -1,7 +1,7 @@
-#include "global_info.h"
-#include "camera.h"
-#include "light.h"
-#include "object.h"
+#include <learnopengl/engine/global_info.h>
+#include <learnopengl/engine/camera.h>
+#include <learnopengl/engine/light.h>
+#include <learnopengl/engine/object.h>
 #include <assert.h>
 #include <cglm/mat4.h>
 #include <cglm/simd/sse2/mat4.h>
@@ -59,7 +59,7 @@ void addLightsToManager(LightInfoManager *manager, LightSource *lights,
                         uint numLights, mat4 view) {
   if (manager->numLights + numLights >= manager->maxLights)
     return;
-  LightData* lightsArrStart = (LightData*)((float*)manager->lights + 4); 
+  LightData* lightsArrStart = (LightData*)((float*)manager->lights + 4);
   encodeLights(lights, numLights, view, lightsArrStart + manager->numLights);
   manager->numLights += numLights;
   uint* start = (uint*)(manager->lights);

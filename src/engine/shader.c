@@ -2,18 +2,20 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "stdlib.h"
-#include "shader.h"
+#include <learnopengl/engine/shader.h>
 #include <glad/glad.h>
 #include <GL/gl.h>
 
 
 void initShaderProgram(ShaderProgram* shaderProg) {
   shaderProg->id = glCreateProgram();
-  shaderProg->shaders = NULL; 
+  shaderProg->shaders = NULL;
 }
 
 void initShaderFromFile(Shader* shader,const char *path) {
   FILE *fd = fopen(path, "r");
+
+  const char * cwd = getenv("PWD");
 
 
   if (fd == NULL) {

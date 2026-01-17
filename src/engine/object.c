@@ -1,9 +1,6 @@
-
-
-#include "object.h"
+#include <learnopengl/engine/object.h>
 #include <cglm/mat4.h>
 #include <cglm/vec4.h>
-#include <stdio.h>
 #include <string.h>
 
 

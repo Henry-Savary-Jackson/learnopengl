@@ -1,10 +1,10 @@
 #pragma once
-#include "light.h"
-#include "global_info.h"
-#include "camera.h"
-#include "mesh.h"
-#include "object.h"
-#include "shader.h"
+#include <learnopengl/engine/light.h>
+#include <learnopengl/engine/global_info.h>
+#include <learnopengl/engine/camera.h>
+#include <learnopengl/engine/mesh.h>
+#include <learnopengl/engine/object.h>
+#include <learnopengl/engine/shader.h>
 #include <sys/types.h>
 
 typedef struct {

@@ -1,7 +1,7 @@
 #pragma  once
 #include <cglm/types-struct.h>
 #include <stdalign.h>
-#include "object.h"
+#include <learnopengl/engine/object.h>
 
 typedef struct  {
     vec3 positionCamera; // relative to camera

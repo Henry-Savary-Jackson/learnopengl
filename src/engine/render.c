@@ -1,8 +1,8 @@
-#include "render.h"
-#include "camera.h"
-#include "mesh.h"
-#include "shader.h"
-#include "textures.h"
+#include <learnopengl/engine/render.h>
+#include <learnopengl/engine/camera.h>
+#include <learnopengl/engine/mesh.h>
+#include <learnopengl/engine/shader.h>
+#include <learnopengl/engine/textures.h>
 #include <cglm/mat4.h>
 #include <cglm/struct/mat4.h>
 #include <glad/glad.h>

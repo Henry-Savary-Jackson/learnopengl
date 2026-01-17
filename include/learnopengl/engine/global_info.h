@@ -1,8 +1,8 @@
-#pragma  once
-#include "camera.h"
-#include "object.h"
-#include "shader.h"
-#include "light.h"
+#pragma once
+#include <learnopengl/engine/camera.h>
+#include <learnopengl/engine/object.h>
+#include <learnopengl/engine/shader.h>
+#include <learnopengl/engine/light.h>
 #include <cglm/types.h>
 #include <sys/types.h>
 
@@ -27,7 +27,7 @@ typedef struct {
 
 } TransformationMatrixManager ;
 // users should be able to change and go above the maximum number of models
-// by calling glBufferData when needed 
+// by calling glBufferData when needed
 
 typedef struct {
     uint protjectionUBO;

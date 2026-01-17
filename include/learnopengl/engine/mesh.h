@@ -1,5 +1,5 @@
 #pragma once
-#include "shader.h"
+#include <learnopengl/engine/shader.h>
 #include <cglm/cglm.h>
 #include <cglm/types-struct.h>
 #include <cglm/types.h>
