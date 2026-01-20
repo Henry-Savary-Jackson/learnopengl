@@ -1,3 +1,5 @@
+#include <cglm/affine.h>
+#include <cglm/vec3.h>
 #include <learnopengl/engine/object.h>
 #include <cglm/mat4.h>
 #include <cglm/vec4.h>
@@ -11,6 +13,7 @@ void initGameObject(GameObject* object){
     object->shaderProgram = NULL;
     object->rotation = (vec3s){0,0,0};
     object->position = (vec3s){0,0,0};
+    object->scale = (vec3s){1,1,1};
 }
 
 void setMeshGameObject(GameObject* object, Mesh* mesh){
@@ -31,6 +34,7 @@ void getModelMatrix(GameObject* object, mat4 dest){
     mat4 yrot = GLM_MAT4_IDENTITY_INIT ;
     mat4 xrot = GLM_MAT4_IDENTITY_INIT ;
     glm_mat4_identity(dest);
+    glm_scale(init, object->scale.raw);
     glm_translate(init, object->position.raw);
     glm_rotate_y(init, object->rotation.x,xrot);
     glm_rotate_x(xrot, object->rotation.y,yrot);
@@ -50,4 +54,12 @@ void rotateGameObjectAround(GameObject* object, float angle, vec3 axis , vec3 pi
     mat4 result= GLM_MAT4_IDENTITY_INIT;
     glm_rotate_at(result, pivot ,  angle, axis);
     glm_mat4_mulv3(result, object->position.raw, 1, object->position.raw);
+}
+
+void scaleGameObject(GameObject* object, vec3 scale){
+    memcpy(object->scale.raw, scale, sizeof(vec3));
+}
+
+void scaleGameObjectFloat(GameObject* object, float scale){
+    glm_vec3_scale(object->scale.raw, scale, object->scale.raw);
 }

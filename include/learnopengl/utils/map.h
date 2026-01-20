@@ -1,0 +1,283 @@
+#pragma once
+
+#include <assert.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+
+#define FNV_PRIME 16777619
+#define FNV_OFFSET_BASIS 2166136261
+// get relatively prime for hash 2
+#define MAX_PROBES 50
+#define MAX_LOAD_FACTOR 0.75
+
+#define MARKER_EMPTY 0
+#define MARKER_FULL 1
+#define MARKER_DELETED 2
+
+#define RESULT_SUCCESS 0
+#define RESULT_ERROR -1
+#define MAX_PROBES_EXCEEDED -2
+
+#define FUNC_QUALIFIERS static inline
+#define FUNC_TYPE(T) FUNC_QUALIFIERS T
+#define FUNC_NAME(prefix, K_name, V_name) prefix##_##K_name##_##V_name
+
+// make eq wokr on any struct by comparing bytes
+#define size_name(T_name) size_of_c##T_name
+#define SIZE_OF_C(T, n)                                                        \
+  static inline size_t size_name(n)(T t) { return sizeof(T); }
+
+SIZE_OF_C(float, f);
+SIZE_OF_C(uint, uint);
+SIZE_OF_C(char *, str);
+
+#define eq_name(T_name) eq_c_##T_name
+#define EQ_C(T, T_name)                                                        \
+  static inline bool eq_name(T_name)(T x, T y) { return x == y; };
+
+EQ_C(float, f);
+EQ_C(uint, uint);
+EQ_C(char *, str);
+
+#define NEG_STRCMP                                                             \
+  static inline bool neg_strcmp(char *x, char *y) { return !strcmp(x, y); }
+NEG_STRCMP
+
+#define SIZE_OF(X, T_name)                                                     \
+  _Generic(X, char *: strlen, default: size_name(T_name))(X)
+#define EQ(X, Y, T_name)                                                       \
+  _Generic(X, char *: neg_strcmp, default: eq_name(T_name))(X, Y)
+
+static inline uint fnv1a(char *data, size_t length) {
+  uint hash = FNV_OFFSET_BASIS;
+  for (int i = 0; i < length; i++) {
+    hash ^= data[i];
+    hash *= FNV_PRIME;
+  }
+  return hash;
+}
+
+static inline uint horners_str(char *data, size_t length) {
+  uint hash = data[0];
+  for (int i = 1; i < length; i++) {
+    hash *= 31;
+    hash += data[1];
+  }
+  return hash;
+}
+
+#define MAP(K, V)                                                              \
+  struct {                                                                     \
+    uint size;                                                                 \
+    uint capacity;                                                             \
+    V *vals;                                                                   \
+    K *keys;                                                                   \
+    u_char *state;                                                             \
+    int minIndex;                                                              \
+    int maxIndex;                                                              \
+  }
+
+#define _freeMap(M, K, V, K_name, V_name)                                      \
+  FUNC_TYPE(void) FUNC_NAME(freeMap, K_name, V_name)(M * map) {                \
+    if (map->keys) {                                                           \
+      free(map->keys);                                                         \
+      free(map->vals);                                                         \
+      free(map->state);                                                        \
+    }                                                                          \
+  }
+
+#define _reallocate(M, K, V, K_name, V_name)                                   \
+  FUNC_TYPE(void) FUNC_NAME(reallocate, K_name, V_name)(M * map) {             \
+    map->keys = (K *)malloc(sizeof(K) * map->capacity);                        \
+    map->vals = (V *)malloc(sizeof(V) * map->capacity);                        \
+    map->state = (u_char *)malloc(sizeof(u_char) * map->capacity);             \
+    memset(map->state, MARKER_EMPTY, map->capacity);                           \
+  }
+
+#define _initHash(M, K, V, K_name, V_name)                                     \
+  FUNC_TYPE(uint) FUNC_NAME(initHash, K_name, V_name)(M * map) {               \
+    map->capacity = 2;                                                         \
+    map->size = 0;                                                             \
+    map->minIndex = map->capacity;                                             \
+    map->maxIndex = -1;                                                        \
+    map->keys = NULL;                                                          \
+    map->vals = NULL;                                                          \
+    map->state = NULL;                                                         \
+    FUNC_NAME(reallocate, K_name, V_name)(map);                                \
+    memset(map->state, MARKER_EMPTY, map->capacity);                           \
+    return RESULT_SUCCESS;                                                     \
+  }
+
+#define _resize(M, K, V, K_name, V_name)                                       \
+  FUNC_TYPE(uint) FUNC_NAME(resize, K_name, V_name)(M * map) {                 \
+    map->capacity <<= 1;                                                       \
+    FUNC_NAME(reallocate, K_name, V_name)(map);                                \
+    map->size = 0;                                                             \
+    return RESULT_SUCCESS;                                                     \
+  }
+
+#define _get_hash_1_index(M, K, V, K_name, V_name)                             \
+  FUNC_TYPE(uint)                                                              \
+  FUNC_NAME(get_hash_1_index, K_name, V_name)(M * map, K key,                  \
+                                              size_t *length_key) {            \
+    *length_key = SIZE_OF(key, K_name);                                        \
+    char *keyPtr = _Generic(key, char *: key, default: (char *)&key);          \
+    uint hash_1 = fnv1a(keyPtr, *length_key);                                  \
+    return hash_1 & map->capacity - 1;                                         \
+  }
+
+#define _get_hash_2_index(M, K, V, K_name, V_name)                             \
+  FUNC_TYPE(uint)                                                              \
+  FUNC_NAME(get_hash_2_index, K_name, V_name)(M * map, K key, uint * hash_2,   \
+                                              uint index, size_t length_key) { \
+    char *keyPtr = _Generic(key, char *: key, default: (char *)&key);          \
+    if (!(*hash_2))                                                            \
+      *hash_2 = horners_str(keyPtr, length_key) | 1;                           \
+    index += *hash_2;                                                          \
+    index &= map->capacity - 1;                                                \
+    return index;                                                              \
+  }
+
+#define __get(M, K, V, K_name, V_name)                                         \
+  FUNC_TYPE(uint)                                                              \
+  FUNC_NAME(_get, K_name, V_name)(M * map, K key, V * value, uint * found) {   \
+    size_t length;                                                             \
+    uint index =                                                               \
+        FUNC_NAME(get_hash_1_index, K_name, V_name)(map, key, &length);        \
+    int iterations = 0;                                                        \
+    uint hash_2 = 0;                                                           \
+    while (map->state[index] != MARKER_EMPTY && iterations < MAX_PROBES) {     \
+      if (map->state[index] == MARKER_FULL &&                                  \
+          EQ(map->keys[index], key, K_name)) {                                 \
+        break; /*found*/                                                       \
+      }                                                                        \
+      iterations++;                                                            \
+      index = FUNC_NAME(get_hash_2_index, K_name, V_name)(map, key, &hash_2,   \
+                                                          index, length);      \
+      assert(hash_2); /*avoid infinie loop if hash_2 is 0, which should not    \
+                         happen*/                                              \
+    }                                                                          \
+    if (iterations >= MAX_PROBES)                                              \
+      return MAX_PROBES_EXCEEDED;                                              \
+                                                                               \
+    if (map->state[index] != MARKER_FULL)                                      \
+      return RESULT_ERROR;                                                     \
+    if (value)                                                                 \
+      *value = map->vals[index];                                               \
+    if (found)                                                                 \
+      *found = index;                                                          \
+    return RESULT_SUCCESS;                                                     \
+  }
+
+#define _get_func(M, K, V, K_name, V_name)                                     \
+  FUNC_TYPE(uint) FUNC_NAME(get, K_name, V_name)(M * map, K key, V * value) {  \
+    return FUNC_NAME(_get, K_name, V_name)(map, key, value, NULL);             \
+  }
+
+#define _remove(M, K, V, K_name, V_name)                                       \
+  FUNC_TYPE(uint)                                                              \
+  FUNC_NAME(remove, K_name, V_name)(M * map, K key, V * value) {               \
+    uint result, index;                                                        \
+    result = FUNC_NAME(_get, K_name, V_name)(map, key, value, &index);         \
+    if (result)                                                                \
+      return result;                                                           \
+    map->state[index] = MARKER_DELETED;                                        \
+    map->size--;                                                               \
+    return RESULT_SUCCESS;                                                     \
+  }
+
+#define __put_internal(M, K, V, K_name, V_name)                                \
+  FUNC_TYPE(uint) FUNC_NAME(_put, K_name, V_name)(M * map, K key, V value) {   \
+    size_t length;                                                             \
+    uint index =                                                               \
+        FUNC_NAME(get_hash_1_index, K_name, V_name)(map, key, &length);        \
+                                                                               \
+    int iterations = 0;                                                        \
+    uint hash_2 = 0;                                                           \
+    while (map->state[index] == MARKER_FULL && iterations < MAX_PROBES) {      \
+      if (EQ(key, map->keys[index], K_name))                                   \
+        goto success;                                                          \
+      iterations++;                                                            \
+      index = FUNC_NAME(get_hash_2_index, K_name, V_name)(map, key, &hash_2,   \
+                                                          index, length);      \
+      assert(hash_2);                                                          \
+    }                                                                          \
+    /* if max collisions reached */                                            \
+    if (map->state[index] == MARKER_FULL)                                      \
+      return MAX_PROBES_EXCEEDED;                                              \
+                                                                               \
+  success:                                                                     \
+    map->state[index] = MARKER_FULL;                                           \
+    map->keys[index] = key;                                                    \
+    map->vals[index] = value;                                                  \
+    map->maxIndex = map->maxIndex < (int)index ? index : map->maxIndex;        \
+    map->minIndex = map->minIndex > (int)index ? index : map->minIndex;        \
+    map->size++;                                                               \
+                                                                               \
+    return RESULT_SUCCESS;                                                     \
+  }
+
+#define put_func(M, K, V, K_name, V_name)                                      \
+  FUNC_TYPE(uint) FUNC_NAME(put, K_name, V_name)(M * map, K key, V value) {    \
+    uint result = FUNC_NAME(_put, K_name, V_name)(map, key, value);            \
+    if (map->size >= MAX_LOAD_FACTOR * map->capacity) {                        \
+      K *oldKeys = map->keys;                                                  \
+      V *oldValues = map->vals;                                                \
+      u_char *oldState = map->state;                                           \
+      uint oldMinIndex = map->minIndex;                                        \
+      uint oldMaxIndex = map->maxIndex;                                        \
+      FUNC_NAME(resize, K_name, V_name)(map);                                  \
+      for (int i = oldMinIndex; i <= oldMaxIndex; i++) {                       \
+        if (oldState[i] != MARKER_FULL)                                        \
+          continue;                                                            \
+        FUNC_NAME(_put, K_name, V_name)(map, oldKeys[i], oldValues[i]);        \
+      }                                                                        \
+      free(oldKeys);                                                           \
+      free(oldValues);                                                         \
+      free(oldState);                                                          \
+    }                                                                          \
+    return RESULT_SUCCESS;                                                     \
+  }
+
+typedef MAP(char *, uint) HashMap_str_uint;
+_freeMap(HashMap_str_uint, char *, uint, str, uint);
+_reallocate(HashMap_str_uint, char *, uint, str, uint);
+_initHash(HashMap_str_uint, char *, uint, str, uint);
+_resize(HashMap_str_uint, char *, uint, str, uint);
+_get_hash_1_index(HashMap_str_uint, char *, uint, str, uint);
+_get_hash_2_index(HashMap_str_uint, char *, uint, str, uint);
+__get(HashMap_str_uint, char *, uint, str, uint);
+_get_func(HashMap_str_uint, char *, uint, str, uint);
+_remove(HashMap_str_uint, char *, uint, str, uint);
+__put_internal(HashMap_str_uint, char *, uint, str, uint);
+put_func(HashMap_str_uint, char *, uint, str, uint);
+
+typedef MAP(char *, char *) HashMap_str_str;
+_freeMap(HashMap_str_str, char *, char *, str, str);
+_reallocate(HashMap_str_str, char *, char *, str, str);
+_initHash(HashMap_str_str, char *, char *, str, str);
+_resize(HashMap_str_str, char *, char *, str, str);
+_get_hash_1_index(HashMap_str_str, char *, char *, str, str);
+_get_hash_2_index(HashMap_str_str, char *, char *, str, str);
+__get(HashMap_str_str, char *, char *, str, str);
+_get_func(HashMap_str_str, char *, char *, str, str);
+_remove(HashMap_str_str, char *, char *, str, str);
+__put_internal(HashMap_str_str, char *, char *, str, str);
+put_func(HashMap_str_str, char *, char *, str, str);
+
+typedef MAP(uint, char *) HashMap_uint_str;
+_freeMap(HashMap_uint_str, uint, char *, uint, str);
+_reallocate(HashMap_uint_str, uint, char *, uint, str);
+_initHash(HashMap_uint_str, uint, char *, uint, str);
+_resize(HashMap_uint_str, uint, char *, uint, str);
+_get_hash_1_index(HashMap_uint_str, uint, char *, uint, str);
+_get_hash_2_index(HashMap_uint_str, uint, char *, uint, str);
+__get(HashMap_uint_str, uint, char *, uint, str);
+_get_func(HashMap_uint_str, uint, char *, uint, str);
+_remove(HashMap_uint_str, uint, char *, uint, str);
+__put_internal(HashMap_uint_str, uint, char *, uint, str);
+put_func(HashMap_uint_str, uint, char *, uint, str);

@@ -15,6 +15,7 @@ typedef struct {
 typedef struct{
     vec3s rotation;
     vec3s position;
+    vec3s scale;
     Mesh* mesh;
     ShaderProgram* shaderProgram;
     Texture* textures;
@@ -35,8 +36,8 @@ void setMeshGameObject(GameObject* object, Mesh* mesh);
 void setTexturesGameObject(GameObject* object, Texture* textures, int numTextures);
 void setShaderProgramGameObject(GameObject* object, ShaderProgram* shaderProgram);
 void getModelMatrix(GameObject* object, mat4 dest);
-
 void rotateGameObject(GameObject* object, vec3 rotation);
 void translateGameObject(GameObject* object, vec3 translation);
-
 void rotateGameObjectAround(GameObject* object, float angle, vec3 axis , vec3 pivot);
+void scaleGameObject(GameObject* object, vec3 scale);
+void scaleGameObjectFloat(GameObject* object, float scale);

@@ -1,3 +1,5 @@
+#include <learnopengl/utils/arraylist.h>
+#include <learnopengl/engine/loading/model_loader.h>
 #include <learnopengl/engine/batch_render.h>
 #include <learnopengl/engine/camera.h>
 #include <learnopengl/engine/global_info.h>
@@ -247,12 +249,12 @@ int main() {
     int offset = 5;
     memcpy(destPtr + i * 8 + offset, verticesNorms + i * 3, 12);
   }
-  float bound =10;
+  float bound =100;
 
   Mesh mesh;
   initMesh(&mesh, vertexData, LENGTH(vertexData), elements, LENGTH(elements));
 
-  uint numLights = 50;
+  uint numLights = 5;
 
   LightSource lights [numLights];
   for (int i = 0 ; i < numLights ; i++){
@@ -273,6 +275,14 @@ int main() {
   uint maxObjects = 50000;
   uint maxVertices = 1800000;
 
+  ArrayList_i elementIndex;
+  initArrayList_i(&elementIndex,  1000, 1000);
+  ArrayList_vertex vertices;
+  initArrayList_vertex(&vertices,  1000, 1000);
+  loadModelFromFile("models/bull.obj", &vertices , &elementIndex);
+
+  Mesh bullMesh ;
+  initMesh(&bullMesh, vertices.ptr, vertices.length, elementIndex.ptr, elementIndex.length);
 
   Material material = {.ambientCoeffient = 1,
                        .diffuseCoeffient = 0.2,
@@ -308,11 +318,11 @@ int main() {
                      maxVerticesLight);
 
   srand(10);
-  int numObjects = 600;
+  int numObjects = 6;
   GameObject *objects = malloc(numObjects * sizeof(GameObject));
   for (int i = 0; i < numObjects; i++) {
     initGameObject(&objects[i]);
-    setMeshGameObject(&objects[i], &mesh);
+    setMeshGameObject(&objects[i], &bullMesh);
     setShaderProgramGameObject(&objects[i], &shaderProgram);
     setTexturesGameObject(objects + i, textures, 2);
 
@@ -324,6 +334,7 @@ int main() {
     vec3s translate_cube = {rand_float(-bound, bound),
                             rand_float(-bound, bound),
                             rand_float(-bound, bound)};
+    scaleGameObjectFloat(&objects[i], 0.06);
     rotateGameObject(&objects[i], rotation_cube.raw);
     translateGameObject(&objects[i], translate_cube.raw);
   }

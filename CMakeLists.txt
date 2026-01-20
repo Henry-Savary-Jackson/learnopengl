@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_subdirectory(src/engine)
+add_subdirectory(src/utils)
 
 add_executable(output
         src/main.c
@@ -19,7 +20,7 @@ add_executable(output
 # alternative cmake -DCMAKE_BUILD_TYPE=Debug <path and other arguments>
 
 target_include_directories( output PUBLIC include)
-target_link_libraries(output engine glfw GL X11 pthread Xrandr Xi dl cglm m)
+target_link_libraries(output utils engine glfw GL X11 pthread Xrandr Xi dl cglm m)
 
 # create compile commands for intelli sense
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
