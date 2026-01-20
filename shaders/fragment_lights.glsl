@@ -2,7 +2,7 @@
 
 in vec2 texPos;
 in vec3 normalCamera;
-in vec3 fragPosCamera;  
+in vec3 fragPosCamera;
 
 out vec4 FragColor;
 
@@ -63,8 +63,8 @@ vec3 getColourLight( inout LightSource light){
 
     float spec =  clamp(dot(reflect(lightDir,norm), normalize(fragPosCamera)  ),0,1) ;
     vec3 specular = pow(spec,128) * lightColour * specularCoeff;
-    
-    vec3 colour =  (ambient+diffuse +specular)*materialColour*intensity ;   
+
+    vec3 colour =  (ambient+diffuse +specular)*materialColour*intensity ;
     return colour;
 }
 
@@ -79,7 +79,7 @@ void main()
     for (int i = 0 ; i < numLights.x; i ++){
         // if (intensity < 0.4){
         //     sumPos += lightData[i].positionCamera.xyz;
-        //     sumColor = lightData[i].colour.xyz; 
+        //     sumColor = lightData[i].colour.xyz;
         //     sumPower += intensity;
         //     numSkipped += 1;
         //     continue;
@@ -91,5 +91,6 @@ void main()
     // LightSource avgFar = LightSource(vec4(sumPos,0)/numSkipped, vec4(sumColor,0)/numSkipped, sumPower);
     // colour += getColourLight(avgFar, sumIntensity);
 
-    FragColor = mix(texture(texture0, texPos), texture(texture1, texPos) ,0.5) * vec4(colour,1) ;
-} 
+    // FragColor = mix(texture(texture0, texPos), texture(texture1, texPos) ,0.5) * vec4(colour,1) ;
+    FragColor = vec4(colour,1) ;
+}

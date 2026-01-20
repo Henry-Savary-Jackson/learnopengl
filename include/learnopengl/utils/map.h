@@ -244,17 +244,62 @@ static inline uint horners_str(char *data, size_t length) {
   }
 
 typedef MAP(char *, uint) HashMap_str_uint;
-_freeMap(HashMap_str_uint, char *, uint, str, uint);
+static inline void freeMap_str_uint(HashMap_str_uint *map) {
+  for (int i = map->minIndex; i <= map->maxIndex; i++) {
+    if (map->state[i] == MARKER_FULL)
+      free(map->keys[i]);
+  }
+  if (map->keys) {
+    free(map->keys);
+    free(map->vals);
+    free(map->state);
+  }
+};
 _reallocate(HashMap_str_uint, char *, uint, str, uint);
 _initHash(HashMap_str_uint, char *, uint, str, uint);
 _resize(HashMap_str_uint, char *, uint, str, uint);
 _get_hash_1_index(HashMap_str_uint, char *, uint, str, uint);
 _get_hash_2_index(HashMap_str_uint, char *, uint, str, uint);
 __get(HashMap_str_uint, char *, uint, str, uint);
-_get_func(HashMap_str_uint, char *, uint, str, uint);
-_remove(HashMap_str_uint, char *, uint, str, uint);
+static inline uint get_str_uint(HashMap_str_uint *map, char *key, uint *value) {
+  return _get_str_uint(map, key, value, ((void *)0));
+};
+static inline uint remove_str_uint(HashMap_str_uint *map, char *key,
+                                   uint *value) {
+  uint result, index;
+  result = _get_str_uint(map, key, value, &index);
+  if (result)
+    return result;
+  map->state[index] = 2;
+  map->size--;
+  free(map->keys[index]);
+  return 0;
+};
 __put_internal(HashMap_str_uint, char *, uint, str, uint);
-put_func(HashMap_str_uint, char *, uint, str, uint);
+static inline uint put_str_uint(HashMap_str_uint *map, char *key, uint value) {
+
+  char *keyCopy = malloc(strlen(key)+1);
+  strcpy(keyCopy, key);
+
+  uint result = _put_str_uint(map, keyCopy, value);
+  if (map->size >= 0.75 * map->capacity) {
+    char **oldKeys = map->keys;
+    uint *oldValues = map->vals;
+    u_char *oldState = map->state;
+    uint oldMinIndex = map->minIndex;
+    uint oldMaxIndex = map->maxIndex;
+    resize_str_uint(map);
+    for (int i = oldMinIndex; i <= oldMaxIndex; i++) {
+      if (oldState[i] != 1)
+        continue;
+      _put_str_uint(map, oldKeys[i], oldValues[i]);
+    }
+    free(oldKeys);
+    free(oldValues);
+    free(oldState);
+  }
+  return 0;
+};
 
 typedef MAP(char *, char *) HashMap_str_str;
 _freeMap(HashMap_str_str, char *, char *, str, str);

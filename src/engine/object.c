@@ -34,11 +34,11 @@ void getModelMatrix(GameObject* object, mat4 dest){
     mat4 yrot = GLM_MAT4_IDENTITY_INIT ;
     mat4 xrot = GLM_MAT4_IDENTITY_INIT ;
     glm_mat4_identity(dest);
-    glm_scale(init, object->scale.raw);
     glm_translate(init, object->position.raw);
     glm_rotate_y(init, object->rotation.x,xrot);
     glm_rotate_x(xrot, object->rotation.y,yrot);
     glm_rotate_z(yrot, object->rotation.z,dest);
+    glm_scale(dest, object->scale.raw);
 }
 
 void rotateGameObject(GameObject* object, vec3 rotation){

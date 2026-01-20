@@ -1,4 +1,4 @@
-#version 430 core
+#version 460 core
 layout (location = 0) in vec3 aPos;
 layout (location = 1 ) in vec2 texCoord;
 layout (location = 2 ) in uint modelIndex;
@@ -19,7 +19,7 @@ struct LightSource
 };
 
 
-layout (std140) buffer ModelTransforms 
+layout (std140) buffer ModelTransforms
 {
     mat4 models[];
 } ;
@@ -32,6 +32,6 @@ layout (std430) buffer Lights{
 void main()
 {
     texPos = texCoord;
-    colour = lightData[modelIndex].colour.rgb;
-    gl_Position = projectionTimesView  *models[modelIndex] * vec4(aPos  , 1.0) ;
+    colour = lightData[gl_InstanceID].colour.rgb;
+    gl_Position = projectionTimesView  *models[gl_InstanceID] * vec4(aPos  , 1.0) ;
 }

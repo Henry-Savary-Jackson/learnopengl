@@ -7,7 +7,7 @@
 #include <stddef.h>
 #include <cglm/struct.h>
 
-void initMesh(Mesh *mesh, Vertex *vertices, int numVertices, uint elements[],
+void initMesh(Mesh *mesh, Vertex *vertices, int numVertices, int elements[],
               int numElements) {
   mesh->vertices = vertices;
   mesh->numVertices = numVertices;

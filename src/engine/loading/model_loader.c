@@ -32,7 +32,7 @@ uint addTriangle( char* triangleStr[3], HashMap_str_uint* vertexToIndex ,ArrayLi
   // store a hashmap of previous vector
   for (int i =0; i <3; i++) {
     uint index;
-    uint result = get_str_uint(vertexToIndex, triangleStr[i], &index);
+    int result = get_str_uint(vertexToIndex, triangleStr[i], &index);
     assert(result != MAX_PROBES_EXCEEDED);
   // check if vertics are unique
     if (result != RESULT_SUCCESS){
@@ -78,7 +78,9 @@ uint loadModelFromFile(const char *path, ArrayList_vertex* vertices, ArrayList_i
     char * line = NULL;
     getline(&line, &lineLength, fd);
     char type [lineLength+1];
-    sscanf(line, "%s", type);
+    memset(type, 0 , sizeof(type));
+    uint scanned =sscanf(line, "%s", type);
+
 
     if (!strcmp(VERTEX_MARKER, type)) {
         float x,y,z;
@@ -106,8 +108,8 @@ uint loadModelFromFile(const char *path, ArrayList_vertex* vertices, ArrayList_i
         char*triangle1[3] = {face1, face2, face3};
         if (numFaces >= 4){
           // 4 faces
-          // chose 2 sets of 3 faces to make triangles
-          // add those 2 triangles
+          // chose 2 sets of 3 points to make triangles
+          // add the other triangles
           char*triangle2[3] = {face3, face4, face1};
           addTriangle(triangle2, &vertexToIndex, &positions, &normals, &textureCoords, elementIndex,vertices);
         }
@@ -117,9 +119,14 @@ uint loadModelFromFile(const char *path, ArrayList_vertex* vertices, ArrayList_i
     free(line);
   }
 
-  fclose(fd);
-  return 0;
+destroyArrayList_vec3(&positions);
+destroyArrayList_vec2(&textureCoords);
+destroyArrayList_vec3(&normals);
+freeMap_str_uint(&vertexToIndex);
+fclose(fd);
+return 0;
 
 error:
   return -1;
+
 }

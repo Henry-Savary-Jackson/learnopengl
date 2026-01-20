@@ -128,7 +128,7 @@ void addTransformationToManager(TransformationMatrixManager *manager, mat4 trans
   // not need to be precise, just very fast
   memcpy(manager->models + manager->numModels, transformation, sizeof(mat4));
   memcpy(manager->invModels + manager->numModels, modelInverse, sizeof(mat4));
-  manager->numModels += 1;
+  manager->numModels +=1;
 }
 
 void flushTransformationManager(TransformationMatrixManager * manager){

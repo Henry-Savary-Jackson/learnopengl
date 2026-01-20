@@ -1,3 +1,4 @@
+#include <cglm/vec3.h>
 #include <learnopengl/utils/arraylist.h>
 #include <learnopengl/engine/loading/model_loader.h>
 #include <learnopengl/engine/batch_render.h>
@@ -184,8 +185,8 @@ float rand_float(float min, float max) {
 int main() {
 
   glfwInit();
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 
@@ -249,20 +250,27 @@ int main() {
     int offset = 5;
     memcpy(destPtr + i * 8 + offset, verticesNorms + i * 3, 12);
   }
-  float bound =100;
 
-  Mesh mesh;
-  initMesh(&mesh, vertexData, LENGTH(vertexData), elements, LENGTH(elements));
 
-  uint numLights = 5;
+  ArrayList_i elementIndexCube;
+  initArrayList_i(&elementIndexCube,  100, 100);
+  ArrayList_vertex verticesCube;
+  initArrayList_vertex(&verticesCube,  100, 100);
+  loadModelFromFile("./models/cube.obj", &verticesCube, &elementIndexCube);
+
+  Mesh meshCube;
+  initMesh(&meshCube, verticesCube.ptr, verticesCube.length, elementIndexCube.ptr, elementIndexCube.length);
+
+  uint numLights = 15;
+  float bound =10;
 
   LightSource lights [numLights];
   for (int i = 0 ; i < numLights ; i++){
 
       lights[i].colour = (vec3s){rand_float(0, 1), rand_float(0, 1), rand_float(0, 1)};
-      lights[i].power = rand_float(10, 50);
+      lights[i].power = rand_float(200, 400);
       initGameObject(&lights[i].object);
-      setMeshGameObject(&lights[i].object, &mesh);
+      setMeshGameObject(&lights[i].object, &meshCube);
       lights[i].object.position = (vec3s){rand_float(-bound, bound), rand_float(-bound, bound), rand_float(-bound, bound)};
       // translateGameObject(&lights[i].object, (vec3){1,3,2});
       // setShaderProgramGameObject(&lights[i].object, &lightShaderProgram);
@@ -272,8 +280,8 @@ int main() {
   currentCam = &camera;
   initCamera(&camera, camera_pos, 90, WIDTH, HEIGHT);
 
-  uint maxObjects = 50000;
-  uint maxVertices = 1800000;
+  uint maxObjects = 5000;
+  uint maxVertices = 18000000;
 
   ArrayList_i elementIndex;
   initArrayList_i(&elementIndex,  1000, 1000);
@@ -284,10 +292,10 @@ int main() {
   Mesh bullMesh ;
   initMesh(&bullMesh, vertices.ptr, vertices.length, elementIndex.ptr, elementIndex.length);
 
-  Material material = {.ambientCoeffient = 1,
+  Material material = {.ambientCoeffient = 0.5,
                        .diffuseCoeffient = 0.2,
-                       .specularCoefficient = 0.4,
-                       .colour = {1,0,0}};
+                       .specularCoefficient = 1,
+                       .colour = {1,1,0}};
 
   MaterialManager materialManager;
   initMaterialManager(&materialManager);
@@ -310,18 +318,19 @@ int main() {
   ;
 
   initBatchRenderer(&renderer, &transformManager ,
-                     maxVertices);
+                     maxVertices, maxVertices*10);
 
   BatchRenderer lightRenderer;
 
   initBatchRenderer(&lightRenderer, &transformManager ,
-                     maxVerticesLight);
+                     maxVerticesLight, maxObjectsLight*10);
 
   srand(10);
-  int numObjects = 6;
+  int numObjects = 300;
   GameObject *objects = malloc(numObjects * sizeof(GameObject));
   for (int i = 0; i < numObjects; i++) {
     initGameObject(&objects[i]);
+    scaleGameObjectFloat(&objects[i], 0.01);
     setMeshGameObject(&objects[i], &bullMesh);
     setShaderProgramGameObject(&objects[i], &shaderProgram);
     setTexturesGameObject(objects + i, textures, 2);
@@ -334,7 +343,7 @@ int main() {
     vec3s translate_cube = {rand_float(-bound, bound),
                             rand_float(-bound, bound),
                             rand_float(-bound, bound)};
-    scaleGameObjectFloat(&objects[i], 0.06);
+    // scaleGameObjectFloat(&objects[i], 0.06);
     rotateGameObject(&objects[i], rotation_cube.raw);
     translateGameObject(&objects[i], translate_cube.raw);
   }
@@ -358,13 +367,9 @@ int main() {
   bindTransformMatrixManager(&transformManager, &shaderProgram);
 
   bindProjectionManagerShader( &projectionManager,&lightShaderProgram);
-  // useShaderProgram(&lightShaderProgram);
-  // glUniform3f(glGetUniformLocation(lightShaderProgram.id, "lightColour"), lights[0].colour.r, lights[0].colour.g, lights[0].colour.b);
-  // unbindShaderProgram();
 
   bindTransformMatrixManager(&transformManager, &lightShaderProgram);
 
-  // setProjectionMatrixManager(&projectionManager, &camera);
   while (!glfwWindowShouldClose(window)) {
     float startTime = glfwGetTime();
     glClearColor(0.2f, 0.4f, 0.4f, 1.0f);
@@ -381,6 +386,9 @@ int main() {
     useShaderProgram(&shaderProgram);
 
     for (int i = 0; i < numObjects; i++) {
+
+      float dt = getDetlaTime();
+      glm_vec3_add(objects[i].rotation.raw, (vec3){3*dt,4*dt,5*dt}, objects[i].rotation.raw);
       renderObjectBatch(&renderer, &objects[i]);
     }
 
@@ -392,7 +400,7 @@ int main() {
 
     for (int i = 0 ; i < numLights; i ++){
       float dt = getDetlaTime();
-      rotateGameObjectAround(&(lights[i].object), 180.f * dt,
+      rotateGameObjectAround(&(lights[i].object), 1.f * dt,
                            (vec3){0, 2, 1}, (vec3){4, 2, 3});
       renderObjectBatch(&renderer, &(lights[i].object));
     }
@@ -427,7 +435,10 @@ int main() {
   freeBatchRenderer(&lightRenderer);
   freeShaderProgram(&shaderProgram);
   freeShaderProgram(&lightShaderProgram);
-  // freeRenderer(&lightRenderer);
+  destroyArrayList_vertex(&vertices);
+  destroyArrayList_vertex(&verticesCube);
+  destroyArrayList_i(&elementIndexCube);
+  destroyArrayList_i(&elementIndex);
 
   glfwTerminate();
   return 0;

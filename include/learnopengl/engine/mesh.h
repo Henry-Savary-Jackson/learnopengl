@@ -23,8 +23,7 @@ typedef struct {
     int numElements;
     int numVertices;
     Vertex* vertices;
-    uint* elementOrder;
-    int numTextures;
+    int* elementOrder;
 } Mesh;
 
-void initMesh(Mesh *mesh, Vertex *vertices, int numVertices, uint elements[],int numElements) ;
+void initMesh(Mesh *mesh, Vertex *vertices, int numVertices, int elements[],int numElements) ;
