@@ -12,6 +12,7 @@
 #include <learnopengl/engine/textures.h>
 #include <learnopengl/utils/utils.h>
 #include <glad/glad.h>
+#include <GL/gl.h>
 #include <GLFW/glfw3.h>
 #include <cglm/affine-post.h>
 #include <cglm/cam.h>
@@ -240,6 +241,12 @@ int main() {
   initTexture(&texture2, "face", "./textures/awesomeface.png");
 
   Texture textures[] = {texture, texture2};
+  Material material = {.ambientCoeffient = 0.5,
+                       .diffuseCoeffient = 1,
+                       .specularCoefficient = 1,
+                       .colour = {1,1,0}};
+
+
 
   // put vertices together
   int numVertices = 36;
@@ -262,18 +269,16 @@ int main() {
   initMesh(&meshCube, verticesCube.ptr, verticesCube.length, elementIndexCube.ptr, elementIndexCube.length);
 
   uint numLights = 15;
-  float bound =10;
+  float bound =100;
 
   LightSource lights [numLights];
   for (int i = 0 ; i < numLights ; i++){
-
       lights[i].colour = (vec3s){rand_float(0, 1), rand_float(0, 1), rand_float(0, 1)};
       lights[i].power = rand_float(200, 400);
       initGameObject(&lights[i].object);
       setMeshGameObject(&lights[i].object, &meshCube);
+      setMaterialGameObject(&lights[i].object, &material);
       lights[i].object.position = (vec3s){rand_float(-bound, bound), rand_float(-bound, bound), rand_float(-bound, bound)};
-      // translateGameObject(&lights[i].object, (vec3){1,3,2});
-      // setShaderProgramGameObject(&lights[i].object, &lightShaderProgram);
   }
 
   Camera camera;
@@ -287,53 +292,45 @@ int main() {
   initArrayList_i(&elementIndex,  1000, 1000);
   ArrayList_vertex vertices;
   initArrayList_vertex(&vertices,  1000, 1000);
-  loadModelFromFile("models/bull.obj", &vertices , &elementIndex);
+  loadModelFromFile("models/dragon.obj", &vertices , &elementIndex);
+
+  printf("num elements: %d, num vertices:%d", elementIndex.length,vertices.length );
 
   Mesh bullMesh ;
   initMesh(&bullMesh, vertices.ptr, vertices.length, elementIndex.ptr, elementIndex.length);
 
-  Material material = {.ambientCoeffient = 0.5,
-                       .diffuseCoeffient = 0.2,
-                       .specularCoefficient = 1,
-                       .colour = {1,1,0}};
-
-  MaterialManager materialManager;
-  initMaterialManager(&materialManager);
-  setMaterialManagerMaterial(&materialManager, &material);
 
 
   uint maxObjectsLight = numLights+ 1000;
+
   LightInfoManager lightManager;
   initLightInfoManager(&lightManager, maxObjectsLight);
 
-  TransformationMatrixManager transformManager;
-  initTransformMatrixManager(&transformManager, maxObjects);
 
   ProjectionManager projectionManager;
   initProjectionMatrixManager(&projectionManager);
 
   BatchRenderer renderer;
-
   uint maxVerticesLight = 36 * maxObjectsLight;
-  ;
 
-  initBatchRenderer(&renderer, &transformManager ,
-                     maxVertices, maxVertices*10);
+  initBatchRenderer(&renderer,
+                     maxVertices, maxVertices*10, maxObjects);
 
-  BatchRenderer lightRenderer;
+  // BatchRenderer lightRenderer;
 
-  initBatchRenderer(&lightRenderer, &transformManager ,
-                     maxVerticesLight, maxObjectsLight*10);
+  // initBatchRenderer(&lightRenderer, &transformManager ,
+  //                    maxVerticesLight, maxObjectsLight*10);
 
   srand(10);
-  int numObjects = 300;
+  int numObjects = 600;
   GameObject *objects = malloc(numObjects * sizeof(GameObject));
   for (int i = 0; i < numObjects; i++) {
     initGameObject(&objects[i]);
-    scaleGameObjectFloat(&objects[i], 0.01);
+    scaleGameObjectFloat(&objects[i], 0.008);
     setMeshGameObject(&objects[i], &bullMesh);
     setShaderProgramGameObject(&objects[i], &shaderProgram);
     setTexturesGameObject(objects + i, textures, 2);
+    setMaterialGameObject(&objects[i], &material);
 
     vec3s rotation_cube = {
         rand_float(-70, 180),
@@ -350,6 +347,7 @@ int main() {
   objects[0].position = (vec3s){0, 0, -2};
   objects[0].rotation = (vec3s){0, 0, 0};
   // Renderer newRender;
+
   glEnable(GL_DEPTH_TEST);
 
   float lastFrameUpdate = 0;
@@ -357,19 +355,13 @@ int main() {
   // bind the manager to send global shader info
   bindLightInfoManager(&lightManager,  &shaderProgram);
 
-  setMaterialManagerMaterial(&materialManager, &material);
-  bindMaterialManagerShader(&materialManager, &shaderProgram);
-  flushMaterialManager(&materialManager);
+  bindTexturesUniform(&shaderProgram, textures, 2);
 
   bindProjectionManagerShader(&projectionManager, &shaderProgram);
-
-  bindTexturesUniform(&shaderProgram, textures, 2);
-  bindTransformMatrixManager(&transformManager, &shaderProgram);
-
   bindProjectionManagerShader( &projectionManager,&lightShaderProgram);
 
-  bindTransformMatrixManager(&transformManager, &lightShaderProgram);
 
+  float dt = 0;
   while (!glfwWindowShouldClose(window)) {
     float startTime = glfwGetTime();
     glClearColor(0.2f, 0.4f, 0.4f, 1.0f);
@@ -386,9 +378,7 @@ int main() {
     useShaderProgram(&shaderProgram);
 
     for (int i = 0; i < numObjects; i++) {
-
-      float dt = getDetlaTime();
-      glm_vec3_add(objects[i].rotation.raw, (vec3){3*dt,4*dt,5*dt}, objects[i].rotation.raw);
+      glm_vec3_add(objects[i].rotation.raw, (vec3){1*dt,1*dt,0.4*dt}, objects[i].rotation.raw);
       renderObjectBatch(&renderer, &objects[i]);
     }
 
@@ -396,10 +386,9 @@ int main() {
 
     // add light information
     useShaderProgram(&lightShaderProgram);
-    flushTransformationManager(&transformManager);
+    // flushTransformationManager(&transformManager);
 
     for (int i = 0 ; i < numLights; i ++){
-      float dt = getDetlaTime();
       rotateGameObjectAround(&(lights[i].object), 1.f * dt,
                            (vec3){0, 2, 1}, (vec3){4, 2, 3});
       renderObjectBatch(&renderer, &(lights[i].object));
@@ -413,7 +402,9 @@ int main() {
     pollInput(window);
 
     // performance tracking
+    dt = getDetlaTime();
     lastTime = glfwGetTime();
+
 
     if (lastTime - lastFrameUpdate > 0.1) {
       lastFrameUpdate = lastTime;
@@ -428,11 +419,10 @@ int main() {
   free(objects);
   freeTexture(&texture);
   freeLightManager(&lightManager);
-  freeMaterialManager(&materialManager);
-  freeTransformMatrixManager(&transformManager);
+  // freeTransformMatrixManager(&transformManager);
   freeProjectionManager(&projectionManager);
   freeBatchRenderer(&renderer);
-  freeBatchRenderer(&lightRenderer);
+  // freeBatchRenderer(&lightRenderer);
   freeShaderProgram(&shaderProgram);
   freeShaderProgram(&lightShaderProgram);
   destroyArrayList_vertex(&vertices);

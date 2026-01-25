@@ -17,28 +17,31 @@ typedef struct {
 
 typedef struct {
   uint vao;
+
   uint vertexVbo;
-  uint objectIndexVBO;
   uint vertexEbo;
-
-  TransformationMatrixManager *transformManager;
-
+  uint modelsVBO;
+  uint invModelsVBO;
   uint drawCommandsBO;
-  DrawElementsIndirectCommand *drawCommandsBuffer;
+  uint materialBO;
 
   Vertex *vertexBuffer;
   uint *elementsBuffer;
+  mat4 * modelsBuffer;
+  mat4 * invModelsBuffer;
+  DrawElementsIndirectCommand *drawCommandsBuffer;
+  Material* materialBuffer;
 
-  uint *objectIndexBuffer;
   uint numElements;
   uint maxElements;
   uint numVertices;
-  uint maxVertexCount;
+  uint maxVertex;
+  uint numModels;
+  uint maxModels;
 } BatchRenderer;
 
 void initBatchRenderer(BatchRenderer *renderer,
-                       TransformationMatrixManager *transformMatrixManager,
-                       uint maxVertices, uint maxElements);
+                       uint maxVertices, uint maxElements, uint maxModels);
 
 void flush(BatchRenderer *renderer);
 

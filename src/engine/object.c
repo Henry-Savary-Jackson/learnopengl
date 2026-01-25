@@ -63,3 +63,7 @@ void scaleGameObject(GameObject* object, vec3 scale){
 void scaleGameObjectFloat(GameObject* object, float scale){
     glm_vec3_scale(object->scale.raw, scale, object->scale.raw);
 }
+
+void setMaterialGameObject(GameObject* object, Material* material){
+    object->material = material;
+}

@@ -70,7 +70,8 @@ typedef ArrayList(int) ArrayList_i;
 
 #define insertDataArrayList(A,T,S) FUNC_TYPE(uint) INSERT_DATA_AT_FUNC(S) (A *arraylist, int offset, T *d, int l){ \
     if (offset + l > arraylist->capacity || arraylist->length + l > arraylist->capacity){ \
-        uint newCapacity = (1+ (arraylist->length+l)/arraylist->growth) *arraylist->growth; \
+         uint newCapacity = (1+ (arraylist->length+l)/arraylist->growth) *arraylist->growth;  \
+      /*  uint newCapacity = (arraylist->length+l) *2; */\
         T * newPtr = (T*)malloc(sizeof(T)* newCapacity); \
         memcpy(newPtr, arraylist->ptr, offset*sizeof(T));\
         memcpy(newPtr+offset, d, l*sizeof(T));\

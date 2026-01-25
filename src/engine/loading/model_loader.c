@@ -1,8 +1,10 @@
 #include <assert.h>
+#include <cglm/vec3.h>
 #include <learnopengl/engine/loading/model_loader.h>
 #include <learnopengl/utils/arraylist.h>
 #include <learnopengl/utils/map.h>
 #include <learnopengl/utils/utils.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,15 +17,18 @@ const char * FACE_MARKER = "f";
 
 uint decodeFacePoint( char* facePoint, Vertex* vertex, ArrayList_vec3* normals, ArrayList_vec3* positions, ArrayList_vec2* textureCoords){
   uint posIndex, normalIndex, uvIndex;
-  assert(sscanf(facePoint,"%d/%d/%d",  &posIndex, &uvIndex, &normalIndex)==3);
+  uint numScanned = sscanf(facePoint,"%d/%d/%d",  &posIndex, &uvIndex, &normalIndex);
+  assert(numScanned >= 1);
+  if (numScanned != 3)
+    numScanned = sscanf(facePoint,"%d//%d",  &posIndex, &normalIndex);
   // handle negative indices
-  posIndex = posIndex < 0 ? positions->length-posIndex: posIndex-1;
-  normalIndex = normalIndex < 0 ? normals->length-normalIndex: normalIndex-1;
-  uvIndex = uvIndex < 0 ? textureCoords->length-uvIndex: uvIndex-1;
+  posIndex =  posIndex < 0 ? positions->length-posIndex: posIndex-1;
+  normalIndex = numScanned >=2? normalIndex < 0 ? normals->length-normalIndex: normalIndex-1 : INT_MIN;
+  uvIndex = numScanned==3? uvIndex < 0 ? textureCoords->length-uvIndex: uvIndex-1 : INT_MIN;
 
-  vertex->normal = getAt_vec3(normals, normalIndex );
+  vertex->normal = (normalIndex !=INT_MIN)? getAt_vec3(normals, normalIndex ): (vec3s){0,0,0};
   vertex->pos = getAt_vec3(positions, posIndex );
-  vertex->texPos = getAt_vec2(textureCoords, uvIndex);
+  vertex->texPos = (uvIndex != INT_MIN)? getAt_vec2(textureCoords, uvIndex) : (vec2s){0,0};
   return 0;
 }
 
@@ -81,21 +86,22 @@ uint loadModelFromFile(const char *path, ArrayList_vertex* vertices, ArrayList_i
     memset(type, 0 , sizeof(type));
     uint scanned =sscanf(line, "%s", type);
 
-
     if (!strcmp(VERTEX_MARKER, type)) {
         float x,y,z;
-        assert(sscanf(line,"%*s %f %f %f",&x, &y, &z)==3);
+        uint numScanned = sscanf(line,"%*s %f %f %f",&x, &y, &z);
+        assert(numScanned==3);
         append_vec3(&positions, (vec3s){x,y,z});
     }
     if (!strcmp(NORMAL_MARKER, type)) {
         float x,y,z;
-        assert(sscanf(line, "%*s %f %f %f",&x, &y, &z)==3);
-        // extendData_f(normals, (float[3]){x,y,z}, 3);
+        uint numScanned = sscanf(line, "%*s %f %f %f",&x, &y, &z);
+        assert(numScanned == 3);
         append_vec3(&normals, (vec3s){x,y,z});
     }
     if (!strcmp(TEXTURE_MARKER, type)){
         float u,v;
-        assert(sscanf(line, "%*s %f %f",&u, &v)==2);
+        uint numScanned = sscanf(line, "%*s %f %f",&u, &v);
+        assert(numScanned == 2);
         append_vec2(&textureCoords, (vec2s){u,v});
     }
     if (!strcmp(FACE_MARKER, type)){

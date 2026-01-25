@@ -4,10 +4,10 @@
 #include <learnopengl/engine/mesh.h>
 #include <learnopengl/engine/shader.h>
 typedef struct {
+    vec3s colour;
     float ambientCoeffient;
     float diffuseCoeffient;
     float specularCoefficient;
-    alignas(16 )vec3s colour;
 } Material;
 
 
@@ -33,6 +33,7 @@ typedef struct {
 
 void initGameObject(GameObject* object);
 void setMeshGameObject(GameObject* object, Mesh* mesh);
+void setMaterialGameObject(GameObject* object, Material* material);
 void setTexturesGameObject(GameObject* object, Texture* textures, int numTextures);
 void setShaderProgramGameObject(GameObject* object, ShaderProgram* shaderProgram);
 void getModelMatrix(GameObject* object, mat4 dest);

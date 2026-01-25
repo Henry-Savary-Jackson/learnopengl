@@ -1,8 +1,14 @@
-#version 430 core
+#version 460 core
 
 in vec2 texPos;
 in vec3 normalCamera;
 in vec3 fragPosCamera;
+in Material {
+    vec3 colour;
+    float ambientCoeff;
+    float diffuseCoeff;
+    float specularCoeff;
+} material;
 
 out vec4 FragColor;
 
@@ -21,14 +27,7 @@ layout (std430) buffer Lights{
     LightSource lightData[];
 } ;
 
-// avoid using vec3 to avoid std140 issues
-layout ( std140) buffer Material{
-    float ambientCoeff;
-    float diffuseCoeff;
-    float specularCoeff;
-    vec4 colour;
-    // in this order so that i can align structs the same way CPU side
-} material;
+
 
 
 float getLightIntensity( inout LightSource light){
@@ -43,7 +42,7 @@ vec3 getColourLight( inout LightSource light){
     vec3 lightColour = light.colour.rgb;
     float ambientCoeff = material.ambientCoeff;
     vec3 ambient =   lightColour  * ambientCoeff;
-    vec3 materialColour = material.colour.rgb;
+    vec3 materialColour = material.colour;
 
     float power = light.power;
     float intensity = getLightIntensity( light);
