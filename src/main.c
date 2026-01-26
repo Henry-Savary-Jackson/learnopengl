@@ -241,7 +241,7 @@ int main() {
   initTexture(&texture2, "face", "./textures/awesomeface.png");
 
   Texture textures[] = {texture, texture2};
-  Material material = {.ambientCoeffient = 0.5,
+  Material material = {.ambientCoeffient = 4,
                        .diffuseCoeffient = 1,
                        .specularCoefficient = 1,
                        .colour = {1,1,0}};
@@ -269,12 +269,22 @@ int main() {
   initMesh(&meshCube, verticesCube.ptr, verticesCube.length, elementIndexCube.ptr, elementIndexCube.length);
 
   uint numLights = 15;
-  float bound =100;
+  float bound =25;
+
+  uint maxObjectsLight = numLights+ 1000;
+  uint maxObjects = 5000;
+  uint maxVertices = 18000000;
+
+  BatchRenderer renderer;
+  uint maxVerticesLight = 36 * maxObjectsLight;
+
+  initBatchRenderer(&renderer,
+                     maxVertices, maxVertices*10, maxObjects);
 
   LightSource lights [numLights];
   for (int i = 0 ; i < numLights ; i++){
       lights[i].colour = (vec3s){rand_float(0, 1), rand_float(0, 1), rand_float(0, 1)};
-      lights[i].power = rand_float(200, 400);
+      lights[i].power = rand_float(500, 700);
       initGameObject(&lights[i].object);
       setMeshGameObject(&lights[i].object, &meshCube);
       setMaterialGameObject(&lights[i].object, &material);
@@ -285,23 +295,16 @@ int main() {
   currentCam = &camera;
   initCamera(&camera, camera_pos, 90, WIDTH, HEIGHT);
 
-  uint maxObjects = 5000;
-  uint maxVertices = 18000000;
-
   ArrayList_i elementIndex;
   initArrayList_i(&elementIndex,  1000, 1000);
   ArrayList_vertex vertices;
   initArrayList_vertex(&vertices,  1000, 1000);
-  loadModelFromFile("models/dragon.obj", &vertices , &elementIndex);
+  loadModelFromFile("models/bull.obj", &vertices , &elementIndex);
 
   printf("num elements: %d, num vertices:%d", elementIndex.length,vertices.length );
 
   Mesh bullMesh ;
   initMesh(&bullMesh, vertices.ptr, vertices.length, elementIndex.ptr, elementIndex.length);
-
-
-
-  uint maxObjectsLight = numLights+ 1000;
 
   LightInfoManager lightManager;
   initLightInfoManager(&lightManager, maxObjectsLight);
@@ -310,19 +313,8 @@ int main() {
   ProjectionManager projectionManager;
   initProjectionMatrixManager(&projectionManager);
 
-  BatchRenderer renderer;
-  uint maxVerticesLight = 36 * maxObjectsLight;
-
-  initBatchRenderer(&renderer,
-                     maxVertices, maxVertices*10, maxObjects);
-
-  // BatchRenderer lightRenderer;
-
-  // initBatchRenderer(&lightRenderer, &transformManager ,
-  //                    maxVerticesLight, maxObjectsLight*10);
-
   srand(10);
-  int numObjects = 600;
+  int numObjects = 1200;
   GameObject *objects = malloc(numObjects * sizeof(GameObject));
   for (int i = 0; i < numObjects; i++) {
     initGameObject(&objects[i]);
@@ -360,7 +352,6 @@ int main() {
   bindProjectionManagerShader(&projectionManager, &shaderProgram);
   bindProjectionManagerShader( &projectionManager,&lightShaderProgram);
 
-
   float dt = 0;
   while (!glfwWindowShouldClose(window)) {
     float startTime = glfwGetTime();
@@ -386,12 +377,12 @@ int main() {
 
     // add light information
     useShaderProgram(&lightShaderProgram);
-    // flushTransformationManager(&transformManager);
 
     for (int i = 0 ; i < numLights; i ++){
       rotateGameObjectAround(&(lights[i].object), 1.f * dt,
                            (vec3){0, 2, 1}, (vec3){4, 2, 3});
-      renderObjectBatch(&renderer, &(lights[i].object));
+
+      renderObjectBatch(&renderer, &objects[i]);
     }
     flush(&renderer);
 

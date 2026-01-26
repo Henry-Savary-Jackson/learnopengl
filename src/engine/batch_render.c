@@ -160,7 +160,7 @@ void initBatchRenderer(BatchRenderer *renderer, uint maxVertices,
 }
 
 void flush(BatchRenderer *renderer) {
-  if (renderer->numModels == 0 || renderer->numVertices == 0)
+  if (!renderer->numModels || !renderer->numVertices )
     return;
 
   printf("num objects: %d, num vertices:%d\n", renderer->numModels,
@@ -173,6 +173,10 @@ void flush(BatchRenderer *renderer) {
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * renderer->numVertices,
                   renderer->vertexBuffer);
 
+  glBindBuffer(GL_ARRAY_BUFFER, renderer->materialBO);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Material) * renderer->numModels,
+                  renderer->materialBuffer);
+
   glBindBuffer(GL_ARRAY_BUFFER, renderer->modelsVBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4) * renderer->numModels,
                   renderer->modelsBuffer);
@@ -181,9 +185,7 @@ void flush(BatchRenderer *renderer) {
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4) * renderer->numModels,
                   renderer->invModelsBuffer);
 
-  glBindBuffer(GL_ARRAY_BUFFER, renderer->materialBO);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Material) * renderer->numModels,
-                  renderer->materialBuffer);
+
 
   // flush data on transformation matrices
   uint numObjects = 1;
@@ -202,9 +204,7 @@ void flush(BatchRenderer *renderer) {
 
   // draw elements
   glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, NULL,
-  numObjects, 0);
-  // glDrawElementsInstanced(GL_TRIANGLES, renderer->drawCommandsBuffer[0].count,
-  //                         GL_UNSIGNED_INT, NULL, renderer->numModels);
+  1, 0);
 
 
   // unbind after render
@@ -223,18 +223,19 @@ void renderObjectBatch(BatchRenderer *renderer, GameObject *object) {
   int newNumElements = renderer->numElements + object->mesh->numElements;
 
   int currentObjectIndex = renderer->numModels;
-  int newNumObject = currentObjectIndex + 1;
+
+  int newNumModels = currentObjectIndex + 1;
 
   if (renderer->maxVertex <= newNumVertices ||
-      renderer->maxModels <= newNumObject ||
+      renderer->maxModels <= newNumModels ||
       renderer->maxElements <= newNumElements) {
     flush(renderer);
 
     newNumVertices = object->mesh->numVertices;
+    newNumModels = 1;
     newNumElements = object->mesh->numElements;
   }
 
-  // add current index to all vertices in index vbo
 
   mat4 model;
   getModelMatrix(object, model);
@@ -247,6 +248,8 @@ void renderObjectBatch(BatchRenderer *renderer, GameObject *object) {
   memcpy(renderer->invModelsBuffer + renderer->numModels, modelInverse,
          sizeof(mat4));
 
+
+  // add current index to all vertices in index vbo
   memcpy(renderer->materialBuffer + renderer->numModels, object->material,
          sizeof(Material));
 
@@ -261,7 +264,7 @@ void renderObjectBatch(BatchRenderer *renderer, GameObject *object) {
   // add draw command to Buffer
   renderer->drawCommandsBuffer[0] = (DrawElementsIndirectCommand){
       .baseInstance = 0,
-      .instanceCount = newNumObject,
+      .instanceCount = newNumModels,
       .firstIndex = 0,
       .baseVertex = 0,
       .count = object->mesh->numElements,
@@ -271,7 +274,7 @@ void renderObjectBatch(BatchRenderer *renderer, GameObject *object) {
 
   renderer->numVertices = object->mesh->numVertices;
   renderer->numElements = object->mesh->numElements;
-  renderer->numModels = newNumObject;
+  renderer->numModels = newNumModels;
   // maintain dictionary of shaders to buffer
   //
 }
