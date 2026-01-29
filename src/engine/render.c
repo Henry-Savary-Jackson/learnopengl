@@ -36,7 +36,7 @@ void setBuffersRenderer(Renderer *renderer, GameObject *object) {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer->ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                sizeof(uint) * object->mesh->numElements,
-               object->mesh->elementOrder, GL_STATIC_DRAW);
+               object->mesh->elementOrder, GL_DYNAMIC_DRAW);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
@@ -45,7 +45,7 @@ void setBuffersRenderer(Renderer *renderer, GameObject *object) {
   glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo);
 
   glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * object->mesh->numVertices,
-               object->mesh->vertices, GL_STATIC_DRAW);
+               object->mesh->vertices, GL_DYNAMIC_DRAW);
 
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)0);
   glEnableVertexAttribArray(0); // vertex pos

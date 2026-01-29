@@ -12,6 +12,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_subdirectory(src/engine)
 add_subdirectory(src/utils)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 add_executable(output
         src/main.c
         src/glad/glad.c

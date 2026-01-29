@@ -237,15 +237,14 @@ int main() {
   Texture texture;
   initTexture(&texture, "container", "./textures/container.jpg");
 
-  Texture texture2;
-  initTexture(&texture2, "face", "./textures/awesomeface.png");
+  // Texture texture2;
+  // initTexture(&texture2, "face", "./textures/awesomeface.png");
 
-  Texture textures[] = {texture, texture2};
+  Texture textures[] = {texture};
   Material material = {.ambientCoeffient = 4,
                        .diffuseCoeffient = 1,
                        .specularCoefficient = 1,
                        .colour = {1,1,0}};
-
 
 
   // put vertices together
@@ -269,7 +268,7 @@ int main() {
   initMesh(&meshCube, verticesCube.ptr, verticesCube.length, elementIndexCube.ptr, elementIndexCube.length);
 
   uint numLights = 15;
-  float bound =25;
+  float bound =20;
 
   uint maxObjectsLight = numLights+ 1000;
   uint maxObjects = 5000;
@@ -289,6 +288,7 @@ int main() {
       setMeshGameObject(&lights[i].object, &meshCube);
       setMaterialGameObject(&lights[i].object, &material);
       lights[i].object.position = (vec3s){rand_float(-bound, bound), rand_float(-bound, bound), rand_float(-bound, bound)};
+      // renderObjectBatch(&renderer, &lights[i].object);
   }
 
   Camera camera;
@@ -314,14 +314,14 @@ int main() {
   initProjectionMatrixManager(&projectionManager);
 
   srand(10);
-  int numObjects = 1200;
+  int numObjects = 1;
   GameObject *objects = malloc(numObjects * sizeof(GameObject));
   for (int i = 0; i < numObjects; i++) {
     initGameObject(&objects[i]);
-    scaleGameObjectFloat(&objects[i], 0.008);
+    scaleGameObjectFloat(&objects[i], 0.01);
     setMeshGameObject(&objects[i], &bullMesh);
     setShaderProgramGameObject(&objects[i], &shaderProgram);
-    setTexturesGameObject(objects + i, textures, 2);
+    setTexturesGameObject(objects + i, textures, 1);
     setMaterialGameObject(&objects[i], &material);
 
     vec3s rotation_cube = {
@@ -341,21 +341,26 @@ int main() {
   // Renderer newRender;
 
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
+  glfwSwapInterval(0);
 
   float lastFrameUpdate = 0;
 
   // bind the manager to send global shader info
   bindLightInfoManager(&lightManager,  &shaderProgram);
 
-  bindTexturesUniform(&shaderProgram, textures, 2);
+  bindTexturesUniform(&shaderProgram, textures, 1);
 
   bindProjectionManagerShader(&projectionManager, &shaderProgram);
   bindProjectionManagerShader( &projectionManager,&lightShaderProgram);
+
 
   float dt = 0;
   while (!glfwWindowShouldClose(window)) {
     float startTime = glfwGetTime();
     glClearColor(0.2f, 0.4f, 0.4f, 1.0f);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // add projection matrices
@@ -381,10 +386,8 @@ int main() {
     for (int i = 0 ; i < numLights; i ++){
       rotateGameObjectAround(&(lights[i].object), 1.f * dt,
                            (vec3){0, 2, 1}, (vec3){4, 2, 3});
-
-      renderObjectBatch(&renderer, &objects[i]);
     }
-    flush(&renderer);
+    // flush(&renderer);
 
     unbindShaderProgram();
 

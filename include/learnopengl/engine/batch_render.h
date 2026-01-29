@@ -48,3 +48,5 @@ void flush(BatchRenderer *renderer);
 void renderObjectBatch(BatchRenderer *renderer, GameObject *object);
 
 void freeBatchRenderer(BatchRenderer *renderer);
+
+void fillInData(BatchRenderer* renderer);

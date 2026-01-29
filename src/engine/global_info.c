@@ -29,7 +29,7 @@ void initLightInfoManager(LightInfoManager *manager, uint maxLights) {
   manager->numLights = 0;
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, manager->lightsSSBO);
   glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vec4)+sizeof(LightData) * maxLights, NULL,
-               GL_STREAM_DRAW);
+               GL_DYNAMIC_DRAW);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
@@ -89,12 +89,12 @@ void initTransformMatrixManager(TransformationMatrixManager *manager, uint maxMo
   glGenBuffers(1, &(manager->modelMatrixSSBO));
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, manager->modelMatrixSSBO);
   glBufferData(GL_SHADER_STORAGE_BUFFER, maxModels * sizeof(mat4), NULL,
-               GL_STREAM_DRAW);
+               GL_DYNAMIC_DRAW);
 
   glGenBuffers(1, &(manager->invModelMatrixSSBO));
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, manager->invModelMatrixSSBO);
   glBufferData(GL_SHADER_STORAGE_BUFFER, maxModels * sizeof(mat4), NULL,
-               GL_STREAM_DRAW);
+               GL_DYNAMIC_DRAW);
 
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
@@ -154,7 +154,7 @@ void initProjectionMatrixManager(ProjectionManager *manager) {
 
   glBindBuffer(GL_UNIFORM_BUFFER, manager->protjectionUBO);
   glBufferData(GL_UNIFORM_BUFFER, sizeof(ProjectionInfo), NULL,
-               GL_STREAM_DRAW);
+               GL_DYNAMIC_DRAW);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 void setProjectionMatrixManager(ProjectionManager *manager, Camera *camera) {
@@ -193,7 +193,7 @@ void freeProjectionManager(ProjectionManager *manager) {
 void initMaterialManager(MaterialManager *manager) {
   glGenBuffers(1, &(manager->materialUBO));
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, manager->materialUBO);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Material), NULL, GL_STREAM_DRAW);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Material), NULL, GL_DYNAMIC_DRAW);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   manager->material = NULL;
 }

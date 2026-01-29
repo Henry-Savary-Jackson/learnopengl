@@ -30,17 +30,20 @@ void setUpBuffers(BatchRenderer *renderer) {
 
   glGenBuffers(1, &(renderer->vertexEbo));
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer->vertexEbo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * renderer->maxElements,
-               NULL, GL_STREAM_DRAW);
+  // glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * renderer->maxElements,
+  //              NULL, GL_DYNAMIC_STORAGE_BIT);
+  // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * renderer->maxElements,
+  //              NULL, GL_DYNAMIC_DRAW);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
   // create VBO for accumulated vertex Information
   glGenBuffers(1, &(renderer->vertexVbo));
 
   glBindBuffer(GL_ARRAY_BUFFER, renderer->vertexVbo);
-
-  glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * renderer->maxVertex, NULL,
-               GL_STREAM_DRAW);
+  // glBufferStorage(GL_ARRAY_BUFFER, sizeof(Vertex) * renderer->maxVertex, NULL,
+  //              GL_DYNAMIC_STORAGE_BIT);
+  // glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * renderer->maxVertex, NULL,
+  //              GL_DYNAMIC_DRAW);
 
   // create shader attributes
   glVertexAttribPointer(ATTR_LOCATION_POS, 3, GL_FLOAT, GL_FALSE,
@@ -65,8 +68,10 @@ void setUpBuffers(BatchRenderer *renderer) {
   glGenBuffers(1, &(renderer->modelsVBO));
 
   glBindBuffer(GL_ARRAY_BUFFER, renderer->modelsVBO);
-  glBufferData(GL_ARRAY_BUFFER, mat4Size * renderer->maxModels, NULL,
-               GL_STREAM_DRAW);
+  glBufferStorage(GL_ARRAY_BUFFER, mat4Size * renderer->maxModels, NULL,
+               GL_DYNAMIC_STORAGE_BIT);
+  // glBufferData(GL_ARRAY_BUFFER, mat4Size * renderer->maxModels, NULL,
+  //              GL_DYNAMIC_DRAW);
 
   glVertexAttribPointer(ATTR_LOCATION_MODEL, 4, GL_FLOAT, GL_FALSE, mat4Size,
                         0);
@@ -89,8 +94,10 @@ void setUpBuffers(BatchRenderer *renderer) {
   glGenBuffers(1, &(renderer->invModelsVBO));
 
   glBindBuffer(GL_ARRAY_BUFFER, renderer->invModelsVBO);
-  glBufferData(GL_ARRAY_BUFFER, mat4Size * renderer->maxModels, NULL,
-               GL_STREAM_DRAW);
+  glBufferStorage(GL_ARRAY_BUFFER, mat4Size * renderer->maxModels, NULL,
+               GL_DYNAMIC_STORAGE_BIT);
+  // glBufferData(GL_ARRAY_BUFFER, mat4Size * renderer->maxModels, NULL,
+  //              GL_DYNAMIC_DRAW);
 
   glVertexAttribPointer(ATTR_LOCATION_INV_MODEL, 4, GL_FLOAT, GL_FALSE,
                         mat4Size, 0);
@@ -111,8 +118,10 @@ void setUpBuffers(BatchRenderer *renderer) {
 
   glGenBuffers(1, &(renderer->materialBO));
   glBindBuffer(GL_ARRAY_BUFFER, renderer->materialBO);
-  glBufferData(GL_ARRAY_BUFFER, renderer->maxModels * sizeof(Material), NULL,
-               GL_STREAM_DRAW);
+  glBufferStorage(GL_ARRAY_BUFFER, renderer->maxModels * sizeof(Material), NULL,
+               GL_DYNAMIC_STORAGE_BIT);
+  // glBufferData(GL_ARRAY_BUFFER, renderer->maxModels * sizeof(Material), NULL,
+  //              GL_DYNAMIC_DRAW);
 
   glVertexAttribPointer(ATTR_LOCATION_MATERIAL_COLOUR, 3, GL_FLOAT, GL_FALSE,
                         sizeof(Material), (void *)offsetof(Material, colour));
@@ -131,9 +140,10 @@ void setUpBuffers(BatchRenderer *renderer) {
 
   glGenBuffers(1, &(renderer->drawCommandsBO));
   glBindBuffer(GL_DRAW_INDIRECT_BUFFER, renderer->drawCommandsBO);
-  glBufferData(GL_DRAW_INDIRECT_BUFFER,
-               sizeof(DrawElementsIndirectCommand) * renderer->maxModels, NULL,
-               GL_STREAM_DRAW);
+  glBufferStorage(GL_DRAW_INDIRECT_BUFFER,  sizeof(DrawElementsIndirectCommand) * renderer->maxModels, NULL, GL_DYNAMIC_STORAGE_BIT);
+  // glBufferData(GL_DRAW_INDIRECT_BUFFER,
+  //              sizeof(DrawElementsIndirectCommand) * renderer->maxModels, NULL,
+  //              GL_DYNAMIC_DRAW);
   glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
   // unbind
@@ -159,59 +169,68 @@ void initBatchRenderer(BatchRenderer *renderer, uint maxVertices,
   setUpBuffers(renderer);
 }
 
+void vertices_func(BatchRenderer* renderer){
+
+  glNamedBufferData(renderer->vertexVbo,  sizeof(Vertex) * renderer->numVertices,
+                  renderer->vertexBuffer, GL_STATIC_DRAW);
+}
+
+void matrices(BatchRenderer* renderer){
+
+  glNamedBufferSubData(renderer->modelsVBO, 0, sizeof(mat4) * renderer->numModels,
+                  renderer->modelsBuffer);
+
+  glNamedBufferSubData(renderer->invModelsVBO, 0, sizeof(mat4) * renderer->numModels,
+                  renderer->invModelsBuffer);
+}
+void materials(BatchRenderer* renderer){
+
+  glNamedBufferSubData(renderer->materialBO, 0, sizeof(Material) * renderer->numModels,
+                  renderer->materialBuffer);
+}
+void drawCommand(BatchRenderer* renderer){
+
+  uint numObjects =1;
+  glNamedBufferSubData(renderer->drawCommandsBO, 0,
+                  sizeof(DrawElementsIndirectCommand) * numObjects,
+                  renderer->drawCommandsBuffer);
+
+}
+
+void indices(BatchRenderer* renderer){
+  glNamedBufferData(renderer->vertexEbo,
+                  sizeof(uint) * renderer->numElements,
+                  renderer->elementsBuffer, GL_STATIC_DRAW);
+}
+
+void fillInData(BatchRenderer* renderer){
+  glBindVertexArray(renderer->vao);
+  // send data in vbo buffers
+  vertices_func(renderer);
+
+  matrices(renderer);
+
+  materials(renderer);
+
+  indices(renderer);
+
+  drawCommand(renderer);
+  // flush data on transformation matrices
+  // flush data on the draw commands
+  // send the ebo info
+}
+
 void flush(BatchRenderer *renderer) {
   if (!renderer->numModels || !renderer->numVertices )
     return;
 
-  printf("num objects: %d, num vertices:%d\n", renderer->numModels,
-         renderer->numVertices);
+  fillInData(renderer);
 
-  glBindVertexArray(renderer->vao);
-
-  // send data in vbo buffers
-  glBindBuffer(GL_ARRAY_BUFFER, renderer->vertexVbo);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * renderer->numVertices,
-                  renderer->vertexBuffer);
-
-  glBindBuffer(GL_ARRAY_BUFFER, renderer->materialBO);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Material) * renderer->numModels,
-                  renderer->materialBuffer);
-
-  glBindBuffer(GL_ARRAY_BUFFER, renderer->modelsVBO);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4) * renderer->numModels,
-                  renderer->modelsBuffer);
-
-  glBindBuffer(GL_ARRAY_BUFFER, renderer->invModelsVBO);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4) * renderer->numModels,
-                  renderer->invModelsBuffer);
-
-
-
-  // flush data on transformation matrices
-  uint numObjects = 1;
-
-  // flush data on the draw commands
   glBindBuffer(GL_DRAW_INDIRECT_BUFFER, renderer->drawCommandsBO);
-  glBufferSubData(GL_DRAW_INDIRECT_BUFFER, 0,
-                  sizeof(DrawElementsIndirectCommand) * numObjects,
-                  renderer->drawCommandsBuffer);
-
-  // send the ebo info
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer->vertexEbo);
-  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0,
-                  sizeof(uint) * renderer->numElements,
-                  renderer->elementsBuffer);
-
   // draw elements
   glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, NULL,
   1, 0);
-
-
-  // unbind after render
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-  glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
 
   renderer->numVertices = 0;
   renderer->numElements = 0;
