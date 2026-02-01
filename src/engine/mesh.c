@@ -7,9 +7,13 @@
 #include <stddef.h>
 #include <cglm/struct.h>
 
+static uint NUM_MESHES = 0;
+
 void initMesh(Mesh *mesh, Vertex *vertices, int numVertices, int elements[],
               int numElements) {
   mesh->vertices = vertices;
+  mesh->id = NUM_MESHES;
+  NUM_MESHES++;
   mesh->numVertices = numVertices;
   mesh->elementOrder = elements;
   mesh->numElements = numElements;

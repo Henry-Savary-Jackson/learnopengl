@@ -65,7 +65,7 @@ static inline uint horners_str(char *data, size_t length) {
   uint hash = data[0];
   for (int i = 1; i < length; i++) {
     hash *= 31;
-    hash += data[1];
+    hash += data[i];
   }
   return hash;
 }
@@ -99,8 +99,8 @@ static inline uint horners_str(char *data, size_t length) {
   }
 
 #define _initHash(M, K, V, K_name, V_name)                                     \
-  FUNC_TYPE(uint) FUNC_NAME(initHash, K_name, V_name)(M * map) {               \
-    map->capacity = 2;                                                         \
+  FUNC_TYPE(uint) FUNC_NAME(initHash, K_name, V_name)(M * map, uint capacityExp) {               \
+    map->capacity = 1 << capacityExp;                                                         \
     map->size = 0;                                                             \
     map->minIndex = map->capacity;                                             \
     map->maxIndex = -1;                                                        \
@@ -326,3 +326,16 @@ _get_func(HashMap_uint_str, uint, char *, uint, str);
 _remove(HashMap_uint_str, uint, char *, uint, str);
 __put_internal(HashMap_uint_str, uint, char *, uint, str);
 put_func(HashMap_uint_str, uint, char *, uint, str);
+
+typedef MAP(uint, uint) HashMap_uint_uint;
+_freeMap(HashMap_uint_uint, uint, uint, uint, uint);
+_reallocate(HashMap_uint_uint, uint, uint, uint, uint);
+_initHash(HashMap_uint_uint, uint, uint, uint, uint);
+_resize(HashMap_uint_uint, uint, uint, uint, uint);
+_get_hash_1_index(HashMap_uint_uint, uint, uint, uint, uint);
+_get_hash_2_index(HashMap_uint_uint, uint, uint, uint, uint);
+__get(HashMap_uint_uint, uint, uint, uint, uint);
+_get_func(HashMap_uint_uint, uint, uint, uint, uint);
+_remove(HashMap_uint_uint, uint, uint, uint, uint);
+__put_internal(HashMap_uint_uint, uint, uint, uint, uint);
+put_func(HashMap_uint_uint, uint, uint, uint, uint);

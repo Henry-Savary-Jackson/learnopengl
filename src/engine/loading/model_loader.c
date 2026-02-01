@@ -74,8 +74,7 @@ uint loadModelFromFile(const char *path, ArrayList_vertex* vertices, ArrayList_i
 
 
   HashMap_str_uint vertexToIndex;
-  initHash_str_uint(&vertexToIndex);
-
+  initHash_str_uint(&vertexToIndex, 16);
 
 
   ulong lineLength;

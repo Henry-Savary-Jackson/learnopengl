@@ -20,6 +20,7 @@ typedef struct{
 } Texture;
 
 typedef struct {
+    uint id;
     int numElements;
     int numVertices;
     Vertex* vertices;

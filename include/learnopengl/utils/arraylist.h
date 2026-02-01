@@ -167,3 +167,17 @@ removeAtArrayList(ArrayList_str, char *, str);
 popArrayList(ArrayList_str, char *, str);
 destroyArrayList(ArrayList_str, char *,str);
 reserveArrayList(ArrayList_str, char *, str);
+
+typedef ArrayList(void*) ArrayList_p;
+initArrayList(ArrayList_p,void*, p);
+insertDataArrayList(ArrayList_p, void*, p);
+extendArrayList(ArrayList_p, void*, p);
+extendArrayByArray(ArrayList_p, void*, p);
+insertArrayList(ArrayList_p, void*, p);
+insertWithArray(ArrayList_p, void*, p)
+appendArrayList(ArrayList_p, void*, p);
+getAtArrayList(ArrayList_p, void*, p);
+removeAtArrayList(ArrayList_p, void*, p);
+popArrayList(ArrayList_p, void*, p);
+destroyArrayList(ArrayList_p, void*,p);
+reserveArrayList(ArrayList_p,void*, p);

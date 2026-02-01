@@ -8,5 +8,8 @@ set(CMAKE_C_STANDARD_REQUIRED True)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_library(engine STATIC loading/model_loader.c global_info.c camera.c batch_render.c light.c textures.c shader.c mesh.c object.c render.c)
+file(GLOB SRCS *.c loading/*.c)
+
+add_library(engine STATIC ${SRCS})
+
 target_include_directories( engine PUBLIC ../../include)
