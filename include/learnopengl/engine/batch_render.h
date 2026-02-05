@@ -9,7 +9,11 @@
 #include <learnopengl/engine/shader.h>
 #include <sys/types.h>
 
-#define MAX_TEXTURES 48
+
+// keep track of shader for each draw call
+// bind each shader
+//
+
 
 typedef struct {
   uint count;
@@ -18,6 +22,50 @@ typedef struct {
   int baseVertex;
   uint baseInstance;
 } DrawElementsIndirectCommand;
+
+typedef ArrayList(DrawElementsIndirectCommand) ArrayList_drawcmd;
+initArrayList(ArrayList_drawcmd,DrawElementsIndirectCommand, draw_cmd);
+insertDataArrayList(ArrayList_drawcmd, DrawElementsIndirectCommand, draw_cmd);
+extendArrayList(ArrayList_drawcmd, DrawElementsIndirectCommand, draw_cmd);
+extendArrayByArray(ArrayList_drawcmd, DrawElementsIndirectCommand, draw_cmd);
+insertArrayList(ArrayList_drawcmd, DrawElementsIndirectCommand, draw_cmd);
+insertWithArray(ArrayList_drawcmd, DrawElementsIndirectCommand,draw_cmd)
+appendArrayList(ArrayList_drawcmd, DrawElementsIndirectCommand, draw_cmd);
+getAtArrayList(ArrayList_drawcmd, DrawElementsIndirectCommand, draw_cmd);
+removeAtArrayList(ArrayList_drawcmd, DrawElementsIndirectCommand, draw_cmd);
+popArrayList(ArrayList_drawcmd, DrawElementsIndirectCommand, draw_cmd);
+destroyArrayList(ArrayList_drawcmd, DrawElementsIndirectCommand,draw_cmd);
+reserveArrayList(ArrayList_drawcmd,DrawElementsIndirectCommand, draw_cmd);
+
+// same shader and same mesh, you use instancing
+//
+
+typedef struct {
+
+  // parallel arrays
+  // keeps track of id of mesh linked to draw command
+  uint* meshIds;
+  DrawElementsIndirectCommand* commands;
+
+  // buffers
+  mat4** models;
+  mat4** invModels;
+  Material** materials;
+  uint** textureIndices;
+
+  uint* numModels;
+  uint numDrawCommands;
+  uint numTextures;
+  // the shader to identify
+  ShaderProgram* shaderProgram;
+
+} RenderingData;
+
+typedef struct{
+  Mesh* mesh;
+  uint elementIndex;
+  uint vertexIndex;
+ } MeshInfo;
 
 typedef struct {
   uint vao;
@@ -30,43 +78,47 @@ typedef struct {
   uint materialBO;
   uint textureIndexVBO;
 
+  MeshInfo* meshes;
+
+
   Vertex *vertexBuffer;
   uint *elementsBuffer;
-  mat4 * modelsBuffer;
-  mat4 * invModelsBuffer;
-  DrawElementsIndirectCommand *drawCommandsBuffer;
-  Material* materialBuffer;
-  uint* textureBuffer;
+  RenderingData* renderingData;
+  DrawElementsIndirectCommand* drawCommandBuffer;
+  mat4* modelsBuffer;
+  mat4* invModelsBuffer;
+  Material*materialsBuffer;
+  uint* textureIndicesBuffer;
+
+  TextureManager textureManager;
+
+  // whenver you draw do it for each draw call
+  // whenever you send data, youconcatenate draw calls into the main buffers;
+
+  // parallel arrays keep track of which draw cmd are given to which shader
 
   uint numVertices;
   uint numElements;
   uint numModels;
-  uint numTextures;
   uint numDrawCommands;
+  uint numShaders;
+  uint numMeshes;
 
   uint maxVertex;
   uint maxElements;
   uint maxModels;
-  uint maxTextures;
-
-  HashMap_uint_uint meshIndices; // index into draw command buffer for any  mesh id
-  ArrayList_i * meshTextures; // for each drawCommand to be GPU instanced, keep an arryalist of indices of their texture for each instance
-  // that way we can use GPu instancing with different textures
-  // whenver we flush, we concatenate all the texture indices for the different draw commands into on buffer that. This is then indexed by GlDrawId+glInstanceId to get the texture
-  // inside the fragment shader.
-
+  uint maxShaders;
 
 } BatchRenderer;
 
-void initBatchRenderer(BatchRenderer *renderer,
-                       uint maxVertices, uint maxElements, uint maxModels);
-
+void initBatchRenderer(BatchRenderer *renderer, uint maxVertices,
+                       uint maxElements, uint maxModels, uint maxShaders) ;
 /*Issue the draw call and reset the client-side buffers*/
-void flush(BatchRenderer *renderer);
+void flush(BatchRenderer *renderer) ;
 
 /*Send data to client-side buffers, automatically
 flushing when limits are exceeded*/
-void renderObjectBatch(BatchRenderer *renderer, GameObject *object);
+void renderObjectBatch(BatchRenderer *renderer, GameObject *object) ;
 
 /*Free all buffers and resources the renderer holds.*/
 void freeBatchRenderer(BatchRenderer *renderer);
@@ -80,7 +132,7 @@ void sendDataToGPU(BatchRenderer* renderer);
 Use this, once all clinet side buffers have been transferred to
 OpenGL buffers to issue the draw call to the GPU.
 */
-void draw(BatchRenderer* renderer);
+void draw(BatchRenderer *renderer) ;
 
 /* Use this to only update transformations matrices of objects */
 void sendTransformationsToGPU(BatchRenderer* renderer);

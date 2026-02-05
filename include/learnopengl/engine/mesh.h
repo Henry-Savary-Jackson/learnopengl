@@ -14,7 +14,7 @@ typedef struct{
 // maybe put __attribute__((packed)) incase of changes
 typedef struct{
     const char* name;
-    uint id;
+    uint glID;
     int width;
     int height;
 } Texture;
@@ -28,3 +28,5 @@ typedef struct {
 } Mesh;
 
 void initMesh(Mesh *mesh, Vertex *vertices, int numVertices, int elements[],int numElements) ;
+
+void freeMesh(Mesh* mesh);

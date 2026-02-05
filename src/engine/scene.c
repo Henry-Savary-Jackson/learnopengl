@@ -1,66 +1,39 @@
 #include "learnopengl/engine/batch_render.h"
 #include "learnopengl/engine/camera.h"
-#include "learnopengl/engine/global_info.h"
+#include <learnopengl/engine/render_context.h>
 #include "learnopengl/engine/object.h"
-#include "learnopengl/engine/shader.h"
-#include "learnopengl/utils/arraylist.h"
 #include <learnopengl/engine/scene.h>
-#include <setjmp.h>
+#include <stdlib.h>
 
 void initScene(Scene *scene, Camera *camera, uint maxShaders, uint maxObjects,
                uint maxLights) {
   scene->camera = camera;
   scene->maxLights = maxLights;
   scene->maxObjects = maxObjects;
-  scene->maxShaders = maxShaders;
-  scene->maxTextures = MAX_TEXTURES;
-  initProjectionMatrixManager(&scene->projectionManager);
-  initLightInfoManager(&scene->lightManager, maxLights);
-  initBatchRenderer(&scene->dynamicRenderer, maxObjects * 10, maxObjects * 300,
-                    maxObjects);
-  initBatchRenderer(&scene->staticRenderer, maxObjects * 10, maxObjects * 300,
-                    maxObjects);
-  scene->numObjects = 0;
-  scene->numShaders = 0;
-  scene->shaderObjects = NULL;
-  scene->gameObjects = NULL;
+  initRenderingContext(&scene->renderingContext, camera, maxLights);
+  initBatchRenderer(&scene->dynamicRenderer, maxObjects * 50000, maxObjects * 1000000,
+                    maxObjects, maxShaders);
+  initBatchRenderer(&scene->staticRenderer, maxObjects * 50000, maxObjects * 1000000,
+                    maxObjects, maxShaders);
+  scene->numObjectsDynamic = 0;
+  scene->numObjectsStatic = 0;
+  scene->lights = malloc(sizeof(LightSource)*scene->maxLights);
+  scene->dynamicObjects = malloc(sizeof(GameObject *) * scene->maxObjects);
+  scene->staticObjects = malloc(sizeof(GameObject *) * scene->maxObjects);
   scene->numLights = 0;
 }
 
 void addObjectToScene(Scene *scene, GameObject *object, uint objectType) {
   // if over, flush
-  if (scene->numObjects >= scene->maxObjects)
+  if (scene->numObjectsDynamic + scene->numObjectsStatic >= scene->maxObjects)
     return;
 
-  addObjectToCorrectShaderList(scene, object, objectType);
-  scene->gameObjects[scene->numObjects] = object;
-  scene->numObjects++;
-}
-
-void addObjectToCorrectShaderList(Scene *scene, GameObject *object,
-                                  uint objectType) {
-  int i = 0;
-  for (; i < scene->numShaders; i++) {
-    if (scene->shaderObjects[i].shaderProgram->id == object->shaderProgram->id)
-      goto add_to_list;
-  }
-  assert(i < scene->maxShaders);
-  if (i == scene->numShaders) {
-    initShaderObjects(&scene->shaderObjects[i], object->shaderProgram);
-    scene->numShaders++;
-  }
-
-add_to_list:
-  ArrayList_p *arrayList = objectType == STATIC_OBJ
-                               ? &scene->shaderObjects[i].staticObjects
-                               : &scene->shaderObjects[i].dynamicObjects;
-  append_p(arrayList, object);
-}
-
-void initShaderObjects(ShaderObjects *shaderObjects, ShaderProgram *program) {
-  shaderObjects->shaderProgram = program;
-  initArrayList_p(&shaderObjects->dynamicObjects, 50, 10);
-  initArrayList_p(&shaderObjects->staticObjects, 50, 10);
+  GameObject **objectList =
+      objectType == STATIC_OBJ ? scene->staticObjects : scene->dynamicObjects;
+  uint *index = objectType == STATIC_OBJ ? &scene->numObjectsStatic
+                                         : &scene->numObjectsDynamic;
+  objectList[*index] = object;
+  (*index)++;
 }
 
 void addLightToScene(Scene *scene, LightSource *light, uint objectType) {
@@ -69,49 +42,39 @@ void addLightToScene(Scene *scene, LightSource *light, uint objectType) {
   scene->numLights++;
 }
 
+
+
 void preLoop(Scene *scene) {
-  flushLightManager(&scene->lightManager);
-  flushProjectionMatrixManager(&scene->projectionManager);
+
+  uint result;
+  for (int i = 0; i < scene->numObjectsStatic; i++) {
+    if ((result = copyObjectToBuffer(&scene->staticRenderer,
+                                     scene->staticObjects[i])) !=
+        BATCH_RENDER_OK)
+      break;
+  }
+  sendDataToGPU(&scene->staticRenderer);
 }
 
 void renderLoop(Scene *scene) {
-
-  for (int i = 0; i < scene->numLights; i++) {
-    mat4 view;
-    getViewMatrix(scene->camera, view);
-    addLightToManager(&scene->lightManager, scene->lights[i], view);
+  for (int i =0 ; i <  scene->numLights; i++){
+    addLightToContext(&scene->renderingContext, scene->lights[i]);
   }
-  // send data to ogl buffers
-  setProjectionMatrixManager(&scene->projectionManager, scene->camera);
-  flushLightManager(&scene->lightManager);
+  updateContext(&scene->renderingContext);
 
-  for (int i = 0; i < scene->numShaders; i++) {
-    ShaderObjects *shaderObjects = &scene->shaderObjects[i];
-    ShaderProgram *shaderProgram = shaderObjects->shaderProgram;
-    useShaderProgram(shaderProgram);
+  sendTransformationsToGPU(&scene->staticRenderer);
 
-    // bind the location in the shader to buffers
-    bindProjectionManagerShader(&scene->projectionManager, shaderProgram);
+  draw(&scene->staticRenderer);
 
-    bindLightInfoManager(&scene->lightManager, shaderProgram);
+  for (int i = 0; i < scene->numObjectsDynamic; i++)
+    renderObjectBatch(&scene->dynamicRenderer, scene->dynamicObjects[i]);
 
-    for (int j = 0; j < shaderObjects->dynamicObjects.length; j++) {
-      renderObjectBatch(&scene->dynamicRenderer,
-                        shaderObjects->dynamicObjects.ptr[j]);
-    }
 
-    flush(&scene->dynamicRenderer);
-  }
-  unbindShaderProgram();
+  flush(&scene->dynamicRenderer);
 }
 
 void freeScene(Scene *scene) {
-  for (int i = 0; i < scene->numShaders; i++) {
-    destroyArrayList_p(&scene->shaderObjects[i].dynamicObjects);
-    destroyArrayList_p(&scene->shaderObjects[i].staticObjects);
-  }
   freeBatchRenderer(&scene->dynamicRenderer);
   freeBatchRenderer(&scene->staticRenderer);
-  freeLightManager(&scene->lightManager);
-  freeProjectionManager(&scene->projectionManager);
+  freeRenderingContext(&scene->renderingContext);
 }

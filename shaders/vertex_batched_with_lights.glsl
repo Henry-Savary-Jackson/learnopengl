@@ -6,6 +6,7 @@ layout (location = 3) in mat4 model;
 layout (location = 7) in mat4 invModel;
 layout (location = 11) in vec3 materialColour;
 layout (location = 12) in vec3 coefficients;
+layout (location = 13) in sampler2D textureIndex;
 
 out vec2 texPos ;
 out vec3 normalCamera;
@@ -16,6 +17,7 @@ out Material {
     float diffuseCoeff;
     float specularCoeff;
 } material;
+flat out sampler2D textureFrag;
 
 layout(std140) uniform ViewProjection{
     mat4 view;
@@ -43,4 +45,6 @@ void main()
     material.ambientCoeff = coefficients.x;
     material.diffuseCoeff = coefficients.y;
     material.specularCoeff = coefficients.z;
+
+    textureFrag = textureIndex;
 }

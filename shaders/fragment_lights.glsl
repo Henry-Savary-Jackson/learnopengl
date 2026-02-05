@@ -9,10 +9,10 @@ in Material {
     float diffuseCoeff;
     float specularCoeff;
 } material;
+flat in sampler2D textureFrag;
 
 out vec4 FragColor;
 
-uniform sampler2D texture0;
 
 struct LightSource
 {
@@ -61,5 +61,5 @@ void main()
 
         colour += getColourLight(lightData[i]);
     }
-    FragColor = texture(texture0,texPos)* vec4(colour,1) ;
+    FragColor = texture(textureFrag,texPos)* vec4(colour,1) ;
 }

@@ -6,16 +6,6 @@
 #include <sys/types.h>
 #include <cglm/cglm.h>
 
-#define INVALID_VAL(T) _Generic( T , \
-    float : NAN,\
-    int: INT_MAX,\
-    char* : NULL,\
-    vec3s: (vec3s){0,0,0},\
-    vec2s: (vec2s){0,0},\
-    Vertex: (Vertex){},\
-    default: NULL\
-)
-
 typedef ArrayList(vec3s) ArrayList_vec3;
 initArrayList(ArrayList_vec3,vec3s, vec3);
 insertDataArrayList(ArrayList_vec3, vec3s, vec3);
@@ -60,4 +50,5 @@ reserveArrayList(ArrayList_vertex, Vertex, vertex);
 
 
 
-uint loadModelFromFile(const char *path, ArrayList_vertex* vertices, ArrayList_i* elementIndex);
+
+uint loadModelFromFile(const char *path, Mesh* mesh);

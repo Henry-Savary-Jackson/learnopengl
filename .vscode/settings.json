@@ -155,7 +155,7 @@
         "/w14928"
     ],
     "C_Cpp_Runner.compilerArgs": [],
-    "C_Cpp_Runner.linkerArgs": [],
+    "C_Cpp_Runner.linkerArgs": [ "-v"],
     "C_Cpp_Runner.includePaths": [],
     "C_Cpp_Runner.includeSearch": [
         "*",

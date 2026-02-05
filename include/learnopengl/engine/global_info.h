@@ -29,6 +29,10 @@ typedef struct {
 // users should be able to change and go above the maximum number of models
 // by calling glBufferData when needed
 
+#define MAX_TEXTURES 48
+#define MAX_LIGHTS 50
+#define MAX_TEXTURES_EXCEEDED -2
+
 typedef struct {
     uint protjectionUBO;
     ProjectionInfo* projectionBuffer;
@@ -39,6 +43,12 @@ typedef struct {
     Material* material;
 } MaterialManager;
 
+typedef struct{
+    uint numTextures;
+    uint maxTextures;
+    Texture** textures;
+} TextureManager;
+
 
 void initLightInfoManager(LightInfoManager* manager, uint maxLights);
 void bindLightInfoManager(LightInfoManager* manager , ShaderProgram* shader);
@@ -46,12 +56,6 @@ void addLightsToManager(LightInfoManager* manager , LightSource* lights, uint nu
 void addLightToManager(LightInfoManager* manager , LightSource* lights, mat4 view);
 void flushLightManager(LightInfoManager * manager);
 void freeLightManager(LightInfoManager* manager);
-
-void initTransformMatrixManager(TransformationMatrixManager* manager, uint maxModels);
-void bindTransformMatrixManager(TransformationMatrixManager* manager , ShaderProgram* shaderProgram);
-void addTransformationToManager(TransformationMatrixManager* manager , mat4 model);
-void flushTransformationManager(TransformationMatrixManager * manager);
-void freeTransformMatrixManager(TransformationMatrixManager* manager);
 
 void initProjectionMatrixManager(ProjectionManager* manager);
 void setProjectionMatrixManager(ProjectionManager* manager, Camera* camera);
@@ -66,3 +70,8 @@ void setMaterialManagerMaterial(MaterialManager* manager, Material* material);
 void bindMaterialManagerShader(MaterialManager* manager, ShaderProgram* shaderProgram);
 void flushMaterialManager(MaterialManager* manager);
 void freeMaterialManager(MaterialManager* manager);
+
+void initTextureManager(TextureManager* manager, uint maxTextures);
+uint addObjectTexture(TextureManager *manager, GameObject* object) ;
+void flushTextureManager(TextureManager* manager);
+void freeTextureManager(TextureManager* manager);

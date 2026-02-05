@@ -30,15 +30,6 @@ typedef ArrayList(int) ArrayList_i;
 
 #define DELIN_NAME(name) name##_
 
-#define INVALID_VAL(T) _Generic( T , \
-    float : NAN,\
-    int: INT_MAX,\
-    char* : NULL,\
-    default: NULL\
-)
-
-
-
 #define INIT_ARRAYLIST_FUNC(T) FUNC_COMB(initArrayList,T)
 #define INSERT_DATA_AT_FUNC(T) FUNC_COMB(insertDataAt,T)
 #define INSERT_AT_FUNC(T) FUNC_COMB(insertAt,T)
@@ -100,21 +91,23 @@ typedef ArrayList(int) ArrayList_i;
     return INSERT_AT_FUNC(S)(arraylist, arraylist->length, value);\
 }
 
-#define getAtArrayList(A,T,S) FUNC_TYPE(T) GET_AT_FUNC(S) (A* arraylist, uint index){\
+#define getAtArrayList(A,T,S) FUNC_TYPE(uint) GET_AT_FUNC(S) (A* arraylist, uint index, T* result){\
     assert(index >= 0 && index < arraylist->length);\
-    return arraylist->ptr[index];\
+    *result = arraylist->ptr[index];\
+    return 0;\
 }
 
-#define removeAtArrayList(A,T,S) FUNC_TYPE(T) REMOVE_AT_FUNC(S) (A* arraylist, uint index ){\
-    if (arraylist->length <= 0) return INVALID_VAL(T);\
-    T value = GET_AT_FUNC(S)(arraylist,  index);\
+#define removeAtArrayList(A,T,S) FUNC_TYPE(uint) REMOVE_AT_FUNC(S) (A* arraylist, uint index, T* result ){\
+    if (arraylist->length <= 0) return -1;\
+    T value;\
+    GET_AT_FUNC(S)(arraylist,  index, &value);\
     memcpy(arraylist->ptr+index, arraylist->ptr+index+1, sizeof(T)*(arraylist->length-index-1));\
     arraylist->length --;\
-    return value;\
+    return 0;\
 }
 
-#define popArrayList(A,T,S) FUNC_TYPE(T) POP_FUNC(S) (A* arraylist){\
-    return REMOVE_AT_FUNC(S)(arraylist, arraylist->length-1);\
+#define popArrayList(A,T,S) FUNC_TYPE(uint) POP_FUNC(S) (A* arraylist, T* result){\
+    return REMOVE_AT_FUNC(S)(arraylist, arraylist->length-1, result);\
 }
 #define destroyArrayList(A,T,S) FUNC_TYPE(void) DESTROY_FUNC(S) (A* arraylist){\
     if (arraylist->ptr) free(arraylist->ptr);\

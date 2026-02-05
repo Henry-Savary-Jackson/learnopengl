@@ -1,4 +1,5 @@
 #include <cglm/vec3.h>
+#include <learnopengl/engine/scene.h>
 #include <learnopengl/utils/arraylist.h>
 #include <learnopengl/engine/loading/model_loader.h>
 #include <learnopengl/engine/batch_render.h>
@@ -148,13 +149,11 @@ int main() {
   initShaderFromFile(&fragmentShaderLight,
                      "./shaders/light_source_fragment.glsl");
   Shader shaderLight[] = {vertexShaderLight, fragmentShaderLight};
+
   attachShadersToProgram(&lightShaderProgram, shaderLight, 2);
 
   Texture texture;
   initTexture(&texture, "container", "./textures/container.jpg");
-
-  // Texture texture2;
-  // initTexture(&texture2, "face", "./textures/awesomeface.png");
 
   Texture textures[] = {texture};
   Material material = {.ambientCoeffient = 4,
@@ -165,27 +164,22 @@ int main() {
 
   // put vertices together
 
-  ArrayList_i elementIndexCube;
-  initArrayList_i(&elementIndexCube,  100, 100);
-  ArrayList_vertex verticesCube;
-  initArrayList_vertex(&verticesCube,  100, 100);
-  loadModelFromFile("./models/cube.obj", &verticesCube, &elementIndexCube);
-
   Mesh meshCube;
-  initMesh(&meshCube, verticesCube.ptr, verticesCube.length, elementIndexCube.ptr, elementIndexCube.length);
+  loadModelFromFile("models/cube.obj", &meshCube);
 
   uint numLights = 15;
   float bound =20;
 
   uint maxObjectsLight = numLights+ 1000;
-  uint maxObjects = 5000;
-  uint maxVertices = 18000000;
+  uint maxObjects = 5000 ;
 
-  BatchRenderer renderer;
-  uint maxVerticesLight = 36 * maxObjectsLight;
+  Camera camera;
 
-  initBatchRenderer(&renderer,
-                     maxVertices, maxVertices*10, maxObjects);
+  currentCam = &camera;
+  initCamera(&camera, camera_pos, 90, WIDTH, HEIGHT);
+
+  Scene scene;
+  initScene(&scene, &camera ,20, maxObjects, maxObjectsLight);
 
   LightSource lights [numLights];
   for (int i = 0 ; i < numLights ; i++){
@@ -195,30 +189,18 @@ int main() {
       setMeshGameObject(&lights[i].object, &meshCube);
       setMaterialGameObject(&lights[i].object, &material);
       lights[i].object.position = (vec3s){rand_float(-bound, bound), rand_float(-bound, bound), rand_float(-bound, bound)};
-      // renderObjectBatch(&renderer, &lights[i].object);
+      setShaderProgramGameObject(&lights[i].object, &lightShaderProgram);
+      addLightToScene(&scene, &lights[i], DYNAMIC_OBJ);
   }
 
-  Camera camera;
-  currentCam = &camera;
-  initCamera(&camera, camera_pos, 90, WIDTH, HEIGHT);
 
-  ArrayList_i elementIndex;
-  initArrayList_i(&elementIndex,  1000, 1000);
-  ArrayList_vertex vertices;
-  initArrayList_vertex(&vertices,  1000, 1000);
-  loadModelFromFile("models/bull.obj", &vertices , &elementIndex);
+  Mesh bullMesh ;
+  loadModelFromFile("models/bull.obj", &bullMesh);
 
   // printf("num elements: %d, num vertices:%d", elementIndex.length,vertices.length );
 
-  Mesh bullMesh ;
-  initMesh(&bullMesh, vertices.ptr, vertices.length, elementIndex.ptr, elementIndex.length);
-
-  LightInfoManager lightManager;
-  initLightInfoManager(&lightManager, maxObjectsLight);
 
 
-  ProjectionManager projectionManager;
-  initProjectionMatrixManager(&projectionManager);
 
   srand(10);
   int numObjects = 100;
@@ -242,6 +224,7 @@ int main() {
     // scaleGameObjectFloat(&objects[i], 0.06);
     rotateGameObject(&objects[i], rotation_cube.raw);
     translateGameObject(&objects[i], translate_cube.raw);
+    addObjectToScene(&scene, &objects[i], DYNAMIC_OBJ);
   }
   objects[0].position = (vec3s){0, 0, -2};
   objects[0].rotation = (vec3s){0, 0, 0};
@@ -255,13 +238,8 @@ int main() {
   float lastFrameUpdate = 0;
 
   // bind the manager to send global shader info
-  bindLightInfoManager(&lightManager,  &shaderProgram);
 
-  bindTexturesUniform(&shaderProgram, textures, 1);
-
-  bindProjectionManagerShader(&projectionManager, &shaderProgram);
-  bindProjectionManagerShader( &projectionManager,&lightShaderProgram);
-
+  preLoop(&scene);
 
   float dt = 0;
   while (!glfwWindowShouldClose(window)) {
@@ -270,34 +248,22 @@ int main() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // add projection matrices
-    setProjectionMatrixManager(&projectionManager, &camera);
 
-    addLightsToManager(&lightManager, lights, numLights, projectionManager.projectionBuffer->viewMatrix);
-    flushLightManager(&lightManager);
-    // send GPU
-    flushProjectionMatrixManager(&projectionManager);
-     // transform manager is flushed by the batched renderer
-    useShaderProgram(&shaderProgram);
+    // -- GAME LOGIC --
 
     for (int i = 0; i < numObjects; i++) {
       glm_vec3_add(objects[i].rotation.raw, (vec3){1*dt,1*dt,0.4*dt}, objects[i].rotation.raw);
-      renderObjectBatch(&renderer, &objects[i]);
     }
 
-    flush(&renderer);
-
-    // add light information
-    useShaderProgram(&lightShaderProgram);
 
     for (int i = 0 ; i < numLights; i ++){
       rotateGameObjectAround(&(lights[i].object), 1.f * dt,
                            (vec3){0, 2, 1}, (vec3){4, 2, 3});
-      renderObjectBatch(&renderer, &lights[i].object);
     }
-    flush(&renderer);
 
-    unbindShaderProgram();
+
+    // -- CALL TO RENDER --
+    renderLoop(&scene);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -318,19 +284,14 @@ int main() {
     }
   }
 
+  freeScene(&scene);
+
   free(objects);
   freeTexture(&texture);
-  freeLightManager(&lightManager);
-  // freeTransformMatrixManager(&transformManager);
-  freeProjectionManager(&projectionManager);
-  freeBatchRenderer(&renderer);
-  // freeBatchRenderer(&lightRenderer);
   freeShaderProgram(&shaderProgram);
   freeShaderProgram(&lightShaderProgram);
-  destroyArrayList_vertex(&vertices);
-  destroyArrayList_vertex(&verticesCube);
-  destroyArrayList_i(&elementIndexCube);
-  destroyArrayList_i(&elementIndex);
+  freeMesh(&meshCube);
+  freeMesh(&bullMesh);
 
   glfwTerminate();
   return 0;

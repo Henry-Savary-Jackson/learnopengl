@@ -1,4 +1,5 @@
 #include "learnopengl/engine/object.h"
+#include "learnopengl/engine/shader.h"
 #include "learnopengl/utils/arraylist.h"
 #include "learnopengl/utils/map.h"
 #include <assert.h>
@@ -25,6 +26,7 @@ static const uint ATTR_LOCATION_MODEL = 3;
 static const uint ATTR_LOCATION_INV_MODEL = 7;
 static const uint ATTR_LOCATION_MATERIAL_COLOUR = 11;
 static const uint ATTR_LOCATION_MATERIAL_COEFF = 12;
+static const uint ATTR_LOCATION_TEXTURE_INDEX = 13;
 
 void setUpBuffers(BatchRenderer *renderer) {
   // Initialize VAO
@@ -119,6 +121,13 @@ void setUpBuffers(BatchRenderer *renderer) {
   glEnableVertexAttribArray(ATTR_LOCATION_MATERIAL_COEFF);
   glVertexAttribDivisor(ATTR_LOCATION_MATERIAL_COEFF, 1);
 
+  glGenBuffers(1, &(renderer->textureIndexVBO));
+  glBindBuffer(GL_ARRAY_BUFFER, renderer->textureIndexVBO);
+  glVertexAttribIPointer(ATTR_LOCATION_TEXTURE_INDEX, 1,GL_UNSIGNED_INT,
+                        sizeof(uint),
+                        NULL);
+  glVertexAttribDivisor(ATTR_LOCATION_TEXTURE_INDEX, 1);
+
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
   glGenBuffers(1, &(renderer->drawCommandsBO));
@@ -126,30 +135,36 @@ void setUpBuffers(BatchRenderer *renderer) {
 
   glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
+
   // unbind
   glBindVertexArray(0);
 }
 
 void initBatchRenderer(BatchRenderer *renderer, uint maxVertices,
-                       uint maxElements, uint maxModels) {
+                       uint maxElements, uint maxModels, uint maxShaders) {
   renderer->maxVertex = maxVertices;
   renderer->maxElements = maxElements;
   renderer->maxModels = maxModels;
   renderer->numVertices = 0;
   renderer->numElements = 0;
   renderer->numModels = 0;
+  renderer->numShaders = 0;
+  renderer->numMeshes = 0;
+  renderer->maxShaders = maxShaders;
   renderer->numDrawCommands = 0;
+
+  renderer->materialsBuffer = malloc(sizeof(Material ) * renderer->maxModels);
+  renderer->modelsBuffer = malloc(sizeof(mat4 ) * renderer->maxModels);
+  renderer->invModelsBuffer = malloc(sizeof(mat4 ) * renderer->maxModels);
+  renderer->textureIndicesBuffer = malloc(sizeof(uint ) * renderer->maxModels);
+  renderer->drawCommandBuffer = malloc(sizeof(DrawElementsIndirectCommand)*renderer->maxModels);
+
   renderer->vertexBuffer = malloc(sizeof(Vertex) * maxVertices);
   renderer->elementsBuffer = malloc(sizeof(uint) * maxVertices);
-  renderer->drawCommandsBuffer =
-      malloc(sizeof(DrawElementsIndirectCommand) * maxModels);
-  renderer->modelsBuffer = malloc(sizeof(mat4) * maxModels);
-  renderer->invModelsBuffer = malloc(sizeof(mat4) * maxModels);
-  renderer->materialBuffer = malloc(sizeof(Material) * maxModels);
-  renderer->textureBuffer = malloc(sizeof(uint) * maxModels);
-
-  initHash_uint_uint(&renderer->meshIndices, 6);
-
+  initTextureManager(&renderer->textureManager, MAX_TEXTURES);
+  renderer->renderingData =
+      malloc(sizeof(RenderingData) * renderer->maxShaders);
+  renderer->meshes = malloc(sizeof(MeshInfo **) * maxModels);
   glGenVertexArrays(1, &(renderer->vao));
   setUpBuffers(renderer);
 }
@@ -160,8 +175,90 @@ void vertices_func(BatchRenderer *renderer) {
                     renderer->vertexBuffer, GL_STATIC_DRAW);
 }
 
-void matrices(BatchRenderer *renderer) {
+void initRenderData(BatchRenderer *renderer, ShaderProgram *shaderProgram) {
+  // append to last index
+  renderer->renderingData[renderer->numShaders] = (RenderingData){
+      .shaderProgram = shaderProgram,
+      .materials = malloc(sizeof(Material *) * renderer->maxModels),
+      .models = malloc(sizeof(mat4 *) * renderer->maxModels),
+      .invModels = malloc(sizeof(mat4 *) * renderer->maxModels),
+      .numModels = malloc(sizeof(uint) * renderer->maxModels),
+      .numDrawCommands = 0,
+      .numTextures = 0,
+      .commands =
+          malloc(sizeof(DrawElementsIndirectCommand) * renderer->maxModels),
+      .meshIds = malloc(sizeof(uint) * renderer->maxModels),
+      .textureIndices = malloc(sizeof(uint *) * renderer->maxModels),
+  };
+  renderer->numShaders++;
+}
 
+// already prepped up buffers with the renderingData data
+// keep track of offset for each shader
+void drawRenderData(BatchRenderer *renderer, RenderingData *renderingData,uint *offset) {
+  // bind shader
+  useShaderProgram(renderingData->shaderProgram);
+  // draw call
+
+  glBindBuffer(GL_DRAW_INDIRECT_BUFFER, renderer->drawCommandsBO);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer->vertexEbo);
+  // draw elements
+  // give offset into buffer on GPU
+  glMultiDrawElementsIndirect(
+      GL_TRIANGLES, GL_UNSIGNED_INT,
+      (void *)(sizeof(DrawElementsIndirectCommand) * (*offset)),
+      renderingData->numDrawCommands, 0);
+
+  // increase offset into the draw commands for the GPU to render
+  *offset += renderingData->numDrawCommands;
+  // u
+  unbindShaderProgram();
+}
+
+void sendRenderDataToBuffer(BatchRenderer *renderer,
+                            RenderingData *renderingData, uint *totalModels,
+                            uint *totalDrawCalls) {
+  // copy draw cmds into buffer
+  memcpy(renderer->drawCommandBuffer + *totalDrawCalls, renderingData->commands,
+         sizeof(DrawElementsIndirectCommand) * renderingData->numDrawCommands);
+  // for each drawCall
+  // append the arrays in order
+  for (int i = 0; i < renderingData->numDrawCommands; i++) {
+    uint numModels = renderingData->numModels[i];
+
+    memcpy(renderer->modelsBuffer + *totalModels, renderingData->models[i],
+           sizeof(mat4) * numModels);
+    memcpy(renderer->invModelsBuffer + *totalModels,
+           renderingData->invModels[i], sizeof(mat4) * numModels);
+    memcpy(renderer->materialsBuffer + *totalModels,
+           renderingData->materials[i], sizeof(mat4) * numModels);
+    memcpy(renderer->textureIndicesBuffer + *totalModels,
+           renderingData->textureIndices[i], sizeof(uint) * numModels);
+
+    *totalModels += renderingData->numModels[i];
+  }
+
+  // increase offset
+  *totalDrawCalls += renderingData->numDrawCommands;
+}
+
+void freeRenderData(RenderingData *renderingData) {
+  for (int i = 0; i < renderingData->numDrawCommands; i++) {
+    free(renderingData->models[i]);
+    free(renderingData->invModels[i]);
+    free(renderingData->materials[i]);
+    free(renderingData->textureIndices[i]);
+  }
+  free(renderingData->commands);
+  free(renderingData->numModels);
+  free(renderingData->models);
+  free(renderingData->invModels);
+  free(renderingData->textureIndices);
+  free(renderingData->materials);
+  free(renderingData->meshIds);
+}
+
+void matrices(BatchRenderer *renderer) {
   glNamedBufferData(renderer->modelsVBO, sizeof(mat4) * renderer->numModels,
                     renderer->modelsBuffer, GL_STATIC_DRAW);
 
@@ -169,17 +266,15 @@ void matrices(BatchRenderer *renderer) {
                     renderer->invModelsBuffer, GL_STATIC_DRAW);
 }
 void materials(BatchRenderer *renderer) {
-
   glNamedBufferData(renderer->materialBO,
                     sizeof(Material) * renderer->numModels,
-                    renderer->materialBuffer, GL_STATIC_DRAW);
+                    renderer->materialsBuffer, GL_STATIC_DRAW);
 }
 void drawCommandBuffer(BatchRenderer *renderer) {
-
   glNamedBufferData(renderer->drawCommandsBO,
                     sizeof(DrawElementsIndirectCommand) *
                         renderer->numDrawCommands,
-                    renderer->drawCommandsBuffer, GL_STATIC_DRAW);
+                    renderer->drawCommandBuffer, GL_STATIC_DRAW);
 }
 
 void indices(BatchRenderer *renderer) {
@@ -188,16 +283,9 @@ void indices(BatchRenderer *renderer) {
 }
 
 void texture(BatchRenderer *renderer) {
-  uint offsetTextureBuf = 0;
-  for (int i = 0; i < renderer->numDrawCommands; i++) {
-    ArrayList_i *list = renderer->meshTextures + i;
-    memcpy(renderer->textureBuffer + offsetTextureBuf, list->ptr,
-           sizeof(uint) * list->length);
-    offsetTextureBuf += list->length;
-    destroyArrayList_i(list);
-  }
-  glNamedBufferData(renderer->textureIndexVBO, sizeof(uint) * offsetTextureBuf,
-                    renderer->textureBuffer, GL_STATIC_DRAW);
+  glNamedBufferData(renderer->textureIndexVBO,
+                    sizeof(uint) * renderer->numModels,
+                    renderer->textureIndicesBuffer, GL_STATIC_DRAW);
 }
 
 void sendTransformationsToGPU(BatchRenderer *renderer) {
@@ -206,6 +294,19 @@ void sendTransformationsToGPU(BatchRenderer *renderer) {
 }
 
 void sendDataToGPU(BatchRenderer *renderer) {
+
+  if (!renderer->numModels || !renderer->numVertices ||
+      !renderer->numDrawCommands || !renderer->numShaders)
+    return;
+
+  uint totalModels= 0;
+  uint  totalDrawCalls = 0;
+  for (int i = 0; i < renderer->numShaders; i++) {
+    sendRenderDataToBuffer(renderer, renderer->renderingData + i, &totalModels,
+                           &totalDrawCalls);
+  }
+  assert(totalModels == renderer->numModels);
+
   glBindVertexArray(renderer->vao);
 
   // send data in vbo buffers
@@ -227,59 +328,35 @@ void sendDataToGPU(BatchRenderer *renderer) {
   drawCommandBuffer(renderer);
 }
 
-uint copyObjectToBuffer(BatchRenderer *renderer, GameObject* object) {
+uint copyObjectToRenderingData(BatchRenderer *renderer,
+                               RenderingData *renderingData, MeshInfo *meshInfo,
+                               GameObject *object) {
+  uint meshIndex = 0;
+  for (; meshIndex < renderingData->numDrawCommands; meshIndex++)
+    if (renderingData->meshIds[meshIndex] == object->mesh->id)
+      break;
 
-  int newNumVertices = renderer->numVertices + object->mesh->numVertices;
-  int newNumElements = renderer->numElements + object->mesh->numElements;
+  if (meshIndex == renderingData->numDrawCommands) {
+    // adding a new draw command for the current mesh
+    renderingData->meshIds[meshIndex] = object->mesh->id;
 
-  int currentObjectIndex = renderer->numModels;
-
-  int newNumModels = currentObjectIndex + 1;
-
-  if (renderer->maxVertex < object->mesh->numVertices || renderer->maxElements < object->mesh->numElements){
-    return BATCH_RENDER_OBJ_EXCEEDS;
+    // add
+    renderingData->commands[meshIndex] = (DrawElementsIndirectCommand){
+        .baseInstance = 0,
+        .instanceCount = 0,
+        .firstIndex = meshInfo->elementIndex,
+        .baseVertex = meshInfo->vertexIndex,
+        .count = object->mesh->numElements,
+    };
+    renderingData->invModels[meshIndex] = malloc(sizeof(mat4)*renderer->maxModels);
+    renderingData->models[meshIndex] = malloc(sizeof(mat4)*renderer->maxModels);
+    renderingData->materials[meshIndex] = malloc(sizeof(Material)*renderer->maxModels);
+    renderingData->textureIndices[meshIndex] = malloc(sizeof(uint)*renderer->maxModels);
+    renderingData->numDrawCommands++;
+    renderingData->numModels[meshIndex] = 0;
+    renderer->numDrawCommands ++;
   }
-  if (renderer->maxVertex <= newNumVertices ||
-      renderer->maxModels <= newNumModels ||
-      renderer->maxElements <= newNumElements ||
-      renderer->numDrawCommands >= renderer->maxModels) {
-
-      return BATCH_RENDER_NO_SPACE;
-  }
-    uint drawCommandIndex;
-  uint result = get_uint_uint(&renderer->meshIndices, object->mesh->id,
-                              &drawCommandIndex);
-  if (result != RESULT_SUCCESS) {
-    // we already have the mesh data, so just instance it.
-
-    drawCommandIndex = renderer->numDrawCommands;
-    renderer->numDrawCommands++;
-
-    put_uint_uint(&renderer->meshIndices, object->mesh->id, drawCommandIndex);
-
-    // init new command buffer
-    renderer->drawCommandsBuffer[drawCommandIndex] =
-        (DrawElementsIndirectCommand){
-            .baseInstance = 0,
-            .instanceCount = 0,
-            .firstIndex = 0,
-            .baseVertex = 0,
-            .count = object->mesh->numElements,
-        };
-    initArrayList_i(&renderer->meshTextures[drawCommandIndex], 50, 10);
-
-    // add vertex data to vertex vbo
-    memcpy(renderer->vertexBuffer + renderer->numVertices,
-           object->mesh->vertices, object->mesh->numVertices * sizeof(Vertex));
-
-    // add elemend index dat to EBO
-    memcpy(renderer->elementsBuffer + renderer->numElements,
-           object->mesh->elementOrder,
-           object->mesh->numElements * sizeof(uint));
-
-    renderer->numVertices = newNumVertices;
-    renderer->numElements = newNumElements;
-  }
+  renderingData->commands[meshIndex].instanceCount++;
 
   mat4 model;
   getModelMatrix(object, model);
@@ -288,78 +365,128 @@ uint copyObjectToBuffer(BatchRenderer *renderer, GameObject* object) {
   glm_mat4_inv_fast(model, modelInverse);
   glm_mat4_transpose(modelInverse);
 
-  memcpy(renderer->modelsBuffer + renderer->numModels, model, sizeof(mat4));
-  memcpy(renderer->invModelsBuffer + renderer->numModels, modelInverse,
+  uint offset = renderingData->numModels[meshIndex];
+  memcpy(renderingData->models[meshIndex] + offset, model, sizeof(mat4));
+  memcpy(renderingData->invModels[meshIndex] + offset, modelInverse,
          sizeof(mat4));
+  renderingData->materials[meshIndex][offset] = *object->material;
 
-  // add current index to all vertices in index vbo
-  memcpy(renderer->materialBuffer + renderer->numModels, object->material,
-         sizeof(Material));
+  // INDEX 0 is always some default texture
+  uint texIndex = addObjectTexture(&renderer->textureManager, object);
+  renderingData->textureIndices[meshIndex][offset] = texIndex >0 ? texIndex : 0;
 
-  // update count of element to drawCommandBuffer
-  renderer->drawCommandsBuffer[drawCommandIndex].instanceCount++;
-  // add texture id to count
-  if (object->numTextures > 0) {
-    glActiveTexture(GL_TEXTURE0 + renderer->numTextures);
-    glBindTexture(GL_TEXTURE_2D, object->textures[0].id);
-    renderer->numTextures++;
-    append_i(&renderer->meshTextures[drawCommandIndex], object->textures[0].id);
-    // TODO: GET A DEFAULT TEXTURE
+  renderingData->numModels[meshIndex]++;
+
+  return BATCH_RENDER_OK;
+}
+
+uint copyObjectToBuffer(BatchRenderer *renderer, GameObject *object) {
+
+  int newNumVertices = renderer->numVertices + object->mesh->numVertices;
+  int newNumElements = renderer->numElements + object->mesh->numElements;
+
+  int currentObjectIndex = renderer->numModels;
+
+  int newNumModels = currentObjectIndex + 1;
+
+  if (renderer->maxVertex < object->mesh->numVertices ||
+      renderer->maxElements < object->mesh->numElements) {
+        // this one object cannot fit in the space given to render
+    return BATCH_RENDER_OBJ_EXCEEDS;
+  }
+  if (renderer->maxVertex <= newNumVertices ||
+      renderer->maxModels <= newNumModels ||
+      renderer->maxElements <= newNumElements ||
+      renderer->numDrawCommands >= renderer->maxModels) {
+        // there is no more space for the current object
+        // calling function can choose to flush the renderer or simply stop rendering
+    return BATCH_RENDER_NO_SPACE;
   }
 
-  renderer->numModels = newNumModels;
 
-  return 0;
+  uint shaderIndex = 0;
+  for (; shaderIndex < renderer->numShaders; shaderIndex++)
+    if (renderer->renderingData[shaderIndex].shaderProgram->id == object->shaderProgram->id)
+      break;
+
+  assert(shaderIndex != renderer->maxShaders);
+
+  uint meshIndex = 0;
+  for (; meshIndex < renderer->numMeshes; meshIndex++)
+    if (renderer->meshes->mesh->id == object->mesh->id)
+      break;
+
+  assert(shaderIndex != renderer->maxModels);
+  if (meshIndex == renderer->numMeshes) {
+    renderer->meshes[meshIndex] =
+        (MeshInfo){.mesh = object->mesh,
+                   .elementIndex = renderer->numElements,
+                   .vertexIndex = renderer->numVertices};
+
+    memcpy(renderer->vertexBuffer + renderer->numVertices,
+           object->mesh->vertices, object->mesh->numVertices * sizeof(Vertex));
+
+    // add elemend index dat to EBO
+    memcpy(renderer->elementsBuffer + renderer->numElements,
+           object->mesh->elementOrder,
+           object->mesh->numElements * sizeof(uint));
+
+    renderer->numElements += object->mesh->numElements;
+    renderer->numVertices += object->mesh->numVertices;
+    renderer->numMeshes++;
+  }
+
+
+  if (shaderIndex == renderer->numShaders) {
+    if (shaderIndex > renderer->maxShaders)
+      return BATCH_RENDER_NO_SPACE;
+    // TODO: might it not be better that all objects are already grouped by shadersa
+    // MAYBE YOU SHOULD INSTEAD HAVE a queue that will flush all once all the shaders limits are reached
+    // or there are no more objects
+    initRenderData(renderer, object->shaderProgram);
+  }
+
+  uint result =
+      copyObjectToRenderingData(renderer, renderer->renderingData + shaderIndex,
+                                renderer->meshes + meshIndex, object);
+  renderer->numModels++;
+  return result;
 }
 
 void draw(BatchRenderer *renderer) {
-  glBindBuffer(GL_DRAW_INDIRECT_BUFFER, renderer->drawCommandsBO);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer->vertexEbo);
-  // draw elements
-  glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, NULL,
-                              renderer->numDrawCommands, 0);
+  uint offset = 0;
+  for (int i = 0; i < renderer->numShaders; i++){
+    drawRenderData(renderer, renderer->renderingData + i, &offset);
+  }
 }
 
-void flush(BatchRenderer *renderer) {
+void flush(BatchRenderer *renderer ) {
   if (!renderer->numModels || !renderer->numVertices ||
-      !renderer->numDrawCommands)
+      !renderer->numDrawCommands || !renderer->numShaders)
     return;
+
+  flushTextureManager(&renderer->textureManager);
+  sendDataToGPU(renderer);
 
   draw(renderer);
 
   renderer->numVertices = 0;
   renderer->numElements = 0;
   renderer->numModels = 0;
+  renderer->numShaders = 0;
   renderer->numDrawCommands = 0;
 };
 
 void renderObjectBatch(BatchRenderer *renderer, GameObject *object) {
-  // int newNumVertices = renderer->numVertices + object->mesh->numVertices;
-  // int newNumElements = renderer->numElements + object->mesh->numElements;
-
-  // int currentObjectIndex = renderer->numModels;
-
-  // int newNumModels = currentObjectIndex + 1;
-
-  uint retCode;
-  do {
-    retCode = copyObjectToBuffer(renderer, object);
-    if (retCode == BATCH_RENDER_NO_SPACE){
-      flush(renderer);
-      initHash_uint_uint(&renderer->meshIndices, 4);
-    }
-
-  }while (retCode == BATCH_RENDER_NO_SPACE);
+  int retCode = BATCH_RENDER_NO_SPACE;
+  while ((retCode = copyObjectToBuffer(renderer, object)) ==
+         BATCH_RENDER_NO_SPACE)
+    flush(renderer);
 
   assert(retCode != BATCH_RENDER_OBJ_EXCEEDS);
 }
 
 void freeBatchRenderer(BatchRenderer *renderer) {
-
-  for (int i = 0; i < renderer->numDrawCommands; i++) {
-    destroyArrayList_i(&renderer->meshTextures[i]);
-  }
-  freeMap_uint_uint(&renderer->meshIndices);
 
   glDeleteBuffers(1, &renderer->vertexVbo);
   glDeleteBuffers(1, &renderer->vertexEbo);
@@ -370,10 +497,7 @@ void freeBatchRenderer(BatchRenderer *renderer) {
 
   free(renderer->vertexBuffer);
   free(renderer->elementsBuffer);
-  free(renderer->drawCommandsBuffer);
-  free(renderer->invModelsBuffer);
-  free(renderer->modelsBuffer);
-  free(renderer->textureBuffer);
+  free(renderer->meshes);
 
   glDeleteVertexArrays(1, &renderer->vao);
 }

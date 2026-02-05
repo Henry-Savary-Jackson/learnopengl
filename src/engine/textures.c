@@ -1,3 +1,4 @@
+#include "learnopengl/engine/textures.h"
 #include <learnopengl/engine/shader.h>
 #include <learnopengl/utils/stb_image.h>
 #include <glad/glad.h>
@@ -5,13 +6,12 @@
 #include <GL/gl.h>
 #include <learnopengl/engine/mesh.h>
 #include <stdio.h>
-#include <string.h>
 
 void initTexture(Texture *texture, const char *name, const char *path) {
 
   texture->name = name;
-  glGenTextures(1, &(texture->id));
-  glBindTexture(GL_TEXTURE_2D, texture->id);
+  glGenTextures(1, &(texture->glID));
+  glBindTexture(GL_TEXTURE_2D, texture->glID);
 
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -37,24 +37,4 @@ void initTexture(Texture *texture, const char *name, const char *path) {
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void bindTexture(Texture* texture){
-    glBindTexture(GL_TEXTURE_2D, texture->id);
-}
-
-void freeTexture(Texture *texture) { glDeleteTextures(1, &(texture->id)); }
-
-void bindTexturesUniform(ShaderProgram *shaderProgram, Texture *textures,
-                         int numTextures) {
-  // set unifroms for all the textures
-  useShaderProgram(shaderProgram);
-  for (int i = 0; i < numTextures; i++) {
-    glActiveTexture(GL_TEXTURE0 + i);
-    glBindTexture(GL_TEXTURE_2D, textures[i].id);
-    // set sampler2d uniform
-    char uniformName[strlen("texture") + 3];
-    sprintf(uniformName, "texture%d", i);
-    uint location = glGetUniformLocation(shaderProgram->id, uniformName);
-    glUniform1i(location, i);
-  }
-  unbindShaderProgram();
-}
+void freeTexture(Texture *texture) { glDeleteTextures(1, &(texture->glID)); }
