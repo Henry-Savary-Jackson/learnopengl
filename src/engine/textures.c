@@ -10,31 +10,33 @@
 void initTexture(Texture *texture, const char *name, const char *path) {
 
   texture->name = name;
-  glGenTextures(1, &(texture->glID));
-  glBindTexture(GL_TEXTURE_2D, texture->glID);
-
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                  GL_NEAREST_MIPMAP_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glCreateTextures(GL_TEXTURE_2D,1, &(texture->glID));
 
   stbi_set_flip_vertically_on_load(true);
   int nrChannels;
   unsigned char *data =
       stbi_load(path, &(texture->width), &(texture->height), &nrChannels, 0);
   if (data) {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture->width, texture->height, 0,
-                 nrChannels == 4?GL_RGBA: GL_RGB, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
+    glTextureStorage2D(texture->glID, 1, nrChannels == 4?GL_RGBA: GL_RGB, texture->width, texture->height  );
+    glTextureSubImage2D(texture->glID, 0, 0, 0 ,texture->width, texture->height, nrChannels == 4?GL_RGBA: GL_RGB, GL_UNSIGNED_BYTE , data);
 
     stbi_image_free(data);
 
   } else {
     printf("Failed to load texture!!!!");
   }
-  glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void freeTexture(Texture *texture) { glDeleteTextures(1, &(texture->glID)); }
+
+
+void initSampler(Sampler *sampler){
+  glGenSamplers(1,&(sampler->glID));
+}
+
+void setSamplerParameter(Sampler* sampler, uint key, uint value){
+  glSamplerParameteri(sampler->glID, key, value);
+}
+void freeSampler(Sampler* sampler){
+  glDeleteSamplers(1, &(sampler->glID));
+}

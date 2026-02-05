@@ -6,3 +6,8 @@
 
 void initTexture(Texture* texture,const char* name,const char * path);
 void freeTexture( Texture* texture );
+
+void initSampler(Sampler* sampler);
+void setSamplerParameter(Sampler* sampler, uint key, uint value);
+
+void freeSampler(Sampler* sampler);

@@ -1,4 +1,7 @@
 #version 460 core
+#extension GL_ARB_bindless_texture : require
+#extension GL_EXT_nonuniform_qualifier : require
+
 layout (location = 0) in vec3 aPos;
 layout (location = 1 ) in vec2 aTexPos;
 layout (location = 2 ) in vec3 aNormal;
@@ -6,7 +9,7 @@ layout (location = 3) in mat4 model;
 layout (location = 7) in mat4 invModel;
 layout (location = 11) in vec3 materialColour;
 layout (location = 12) in vec3 coefficients;
-layout (location = 13) in sampler2D textureIndex;
+layout (location = 13) in uint textureIndex;
 
 out vec2 texPos ;
 out vec3 normalCamera;
@@ -17,7 +20,7 @@ out Material {
     float diffuseCoeff;
     float specularCoeff;
 } material;
-flat out sampler2D textureFrag;
+flat out uint textureIndexFrag;
 
 layout(std140) uniform ViewProjection{
     mat4 view;
@@ -46,5 +49,5 @@ void main()
     material.diffuseCoeff = coefficients.y;
     material.specularCoeff = coefficients.z;
 
-    textureFrag = textureIndex;
+    textureIndexFrag = textureIndex;
 }

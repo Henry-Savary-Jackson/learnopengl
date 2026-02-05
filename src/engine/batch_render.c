@@ -122,11 +122,8 @@ void setUpBuffers(BatchRenderer *renderer) {
   glVertexAttribDivisor(ATTR_LOCATION_MATERIAL_COEFF, 1);
 
   glGenBuffers(1, &(renderer->textureIndexVBO));
-  glBindBuffer(GL_ARRAY_BUFFER, renderer->textureIndexVBO);
-  glVertexAttribIPointer(ATTR_LOCATION_TEXTURE_INDEX, 1,GL_UNSIGNED_INT,
-                        sizeof(uint),
-                        NULL);
-  glVertexAttribDivisor(ATTR_LOCATION_TEXTURE_INDEX, 1);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, renderer->textureIndexVBO);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -190,6 +187,8 @@ void initRenderData(BatchRenderer *renderer, ShaderProgram *shaderProgram) {
       .meshIds = malloc(sizeof(uint) * renderer->maxModels),
       .textureIndices = malloc(sizeof(uint *) * renderer->maxModels),
   };
+  bindTextureManagerToShader(&renderer->textureManager, shaderProgram);
+
   renderer->numShaders++;
 }
 
@@ -197,6 +196,7 @@ void initRenderData(BatchRenderer *renderer, ShaderProgram *shaderProgram) {
 // keep track of offset for each shader
 void drawRenderData(BatchRenderer *renderer, RenderingData *renderingData,uint *offset) {
   // bind shader
+
   useShaderProgram(renderingData->shaderProgram);
   // draw call
 

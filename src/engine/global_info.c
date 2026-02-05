@@ -1,4 +1,5 @@
 #include "learnopengl/engine/mesh.h"
+#include "learnopengl/engine/shader.h"
 #include "learnopengl/engine/textures.h"
 #include <assert.h>
 #include <cglm/mat4.h>
@@ -9,6 +10,7 @@
 #include <learnopengl/engine/global_info.h>
 #include <learnopengl/engine/light.h>
 #include <learnopengl/engine/object.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,12 +19,14 @@ static const uint UNIFORM_VIEW_PROJ_BINDING = 1;
 static const uint UNIFORM_MATERIAL_BINDING = 2;
 static const uint SHADER_BUFFER_MODELS_BIND = 3;
 static const uint SHADER_BUFFER_INV_MODELS_BIND = 4;
+static const uint SHADER_TEXTURE_BINDING = 5;
 
 static const char *SHADER_BUFFER_LIGHT_NAME = "Lights";
 static const char *UNIFORM_VIEW_PROJ_NAME = "ViewProjection";
 static const char *UNIFORM_MATERIAL_NAME = "Material";
 static const char *SHADER_BUFFER_MODELS_NAME = "ModelTransforms";
 static const char *SHADER_BUFFER_INV_MODELS_NAME = "InverseModelTransforms";
+static const char *SHADER_BUFFER_TEXTURE_NAME = "Textures";
 
 void initLightInfoManager(LightInfoManager *manager, uint maxLights) {
   glGenBuffers(1, &(manager->lightsSSBO));
@@ -132,38 +136,61 @@ void freeProjectionManager(ProjectionManager *manager) {
 }
 
 void initTextureManager(TextureManager *manager, uint maxTextures) {
-  manager->numTextures = 0;
-  manager->textures = malloc(sizeof(Texture *) * maxTextures);
+  glGenBuffers(1, &(manager->textureHandleSSBO));
+  manager->numHandles = 0;
+  manager->handles = malloc(sizeof(int64_t) * maxTextures);
   manager->maxTextures = maxTextures;
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SHADER_TEXTURE_BINDING,
+                     manager->textureHandleSSBO);
 }
-uint addObjectTexture(TextureManager *manager, GameObject* object) {
+
+uint addObjectTexture(TextureManager *manager, GameObject *object) {
 
   if (object->numTextures <= 0)
     return TEXTURE_UNDEFINED_INDEX;
 
+  uint64_t handle = glGetTextureSamplerHandleARB(object->textures->glID,
+                                                 object->sampler->glID);
+
   uint index;
-  for (; index < manager->numTextures; index++)
-    if (object->textures->glID == manager->textures[index]->glID)
+  for (; index < manager->numHandles; index++)
+    if (handle == manager->handles[index])
       break;
 
   if (index >= manager->maxTextures)
     return TEXTURE_UNDEFINED_INDEX;
 
-  if (index == manager->numTextures)
-    manager->textures[index] = object->textures;
+  if (index == manager->numHandles) {
+    manager->handles[index] = handle;
+    manager->numHandles++;
+  }
 
   return index;
 }
 
-void flushTextureManager(TextureManager* manager){
+void bindTextureManagerToShader(TextureManager *manager,
+                                ShaderProgram *shaderProgram) {
 
-  for (int i; i < manager->numTextures; i++){
-    glActiveTexture(GL_TEXTURE0 + i);
-    glBindTexture(GL_TEXTURE_2D, manager->textures[i]->glID);
+  uint modelsIndex = glGetProgramResourceIndex(
+      shaderProgram->id, GL_SHADER_STORAGE_BLOCK, SHADER_BUFFER_TEXTURE_NAME);
+
+  if (modelsIndex != GL_INVALID_INDEX) {
+    glShaderStorageBlockBinding(shaderProgram->id, modelsIndex,
+                                SHADER_TEXTURE_BINDING);
   }
-  manager->numTextures = 0;
 }
 
-void freeTextureManager(TextureManager *manager) {
-  free(manager->textures);
+void flushTextureManager(TextureManager *manager) {
+
+  for (int i = 0; i < manager->numHandles; i++)
+    glMakeTextureHandleResidentARB(manager->handles[i]);
+  // TODO: MAKE THEM NON RESIDENT LATER
+
+  glNamedBufferData(manager->textureHandleSSBO,
+                    sizeof(uint64_t) * manager->numHandles, manager->handles,
+                    GL_STATIC_DRAW);
+
+  manager->numHandles = 0;
 }
+
+void freeTextureManager(TextureManager *manager) { free(manager->handles); }

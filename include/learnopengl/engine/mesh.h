@@ -20,6 +20,11 @@ typedef struct{
 } Texture;
 
 typedef struct {
+    uint glID;
+
+ } Sampler;
+
+typedef struct {
     uint id;
     int numElements;
     int numVertices;

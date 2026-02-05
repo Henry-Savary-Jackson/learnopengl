@@ -161,6 +161,17 @@ int main() {
                        .specularCoefficient = 1,
                        .colour = {1,1,0}};
 
+  Sampler sampler;
+  initSampler(&sampler);
+  setSamplerParameter(&sampler, GL_TEXTURE_WRAP_S , GL_REPEAT);
+  setSamplerParameter(&sampler, GL_TEXTURE_WRAP_T , GL_REPEAT);
+  setSamplerParameter(&sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+  setSamplerParameter(&sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+  //                 GL_NEAREST_MIPMAP_LINEAR);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+
 
   // put vertices together
 
@@ -191,6 +202,7 @@ int main() {
       lights[i].object.position = (vec3s){rand_float(-bound, bound), rand_float(-bound, bound), rand_float(-bound, bound)};
       setShaderProgramGameObject(&lights[i].object, &lightShaderProgram);
       addLightToScene(&scene, &lights[i], DYNAMIC_OBJ);
+      setSampler(&lights[i].object, &sampler);
   }
 
 
@@ -224,6 +236,9 @@ int main() {
     // scaleGameObjectFloat(&objects[i], 0.06);
     rotateGameObject(&objects[i], rotation_cube.raw);
     translateGameObject(&objects[i], translate_cube.raw);
+
+    setSampler(&objects[i], &sampler );
+
     addObjectToScene(&scene, &objects[i], DYNAMIC_OBJ);
   }
   objects[0].position = (vec3s){0, 0, -2};
@@ -292,6 +307,7 @@ int main() {
   freeShaderProgram(&lightShaderProgram);
   freeMesh(&meshCube);
   freeMesh(&bullMesh);
+  freeSampler(&sampler);
 
   glfwTerminate();
   return 0;

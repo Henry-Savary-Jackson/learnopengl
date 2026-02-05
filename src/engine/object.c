@@ -29,6 +29,10 @@ void setShaderProgramGameObject(GameObject* object, ShaderProgram* shaderProgram
     object->shaderProgram= shaderProgram;
 }
 
+void setSampler(GameObject* object, Sampler* sampler){
+    object->sampler = sampler;
+}
+
 void getModelMatrix(GameObject* object, mat4 dest){
     mat4 init = GLM_MAT4_IDENTITY_INIT;
     mat4 yrot = GLM_MAT4_IDENTITY_INIT ;
