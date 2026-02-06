@@ -1,6 +1,6 @@
 #version 460 core
 #extension GL_ARB_bindless_texture : require
-#extension GL_EXT_nonuniform_qualifier : require
+// #extension GL_EXT_nonuniform_qualifier : require
 
 layout (location = 0) in vec3 aPos;
 layout (location = 1 ) in vec2 aTexPos;

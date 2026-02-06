@@ -33,11 +33,11 @@ void initLightInfoManager(LightInfoManager *manager, uint maxLights) {
   manager->maxLights = maxLights;
   manager->lights = malloc(sizeof(vec4) + sizeof(LightData) * maxLights);
   manager->numLights = 0;
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, manager->lightsSSBO);
-  glBufferData(GL_SHADER_STORAGE_BUFFER,
-               sizeof(vec4) + sizeof(LightData) * maxLights, NULL,
-               GL_DYNAMIC_DRAW);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  // glBindBuffer(GL_SHADER_STORAGE_BUFFER, manager->lightsSSBO);
+  // glBufferData(GL_SHADER_STORAGE_BUFFER,
+  //              sizeof(vec4) + sizeof(LightData) * maxLights, NULL,
+  //              GL_DYNAMIC_DRAW);
+  // glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
 void bindLightInfoManager(LightInfoManager *manager,
@@ -79,9 +79,9 @@ void flushLightManager(LightInfoManager *manager) {
   uint *start = (uint *)(manager->lights);
   *start = manager->numLights;
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, manager->lightsSSBO);
-  glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0,
+  glBufferData(GL_SHADER_STORAGE_BUFFER,
                   sizeof(vec4) + sizeof(LightData) * manager->numLights,
-                  manager->lights);
+                  manager->lights, GL_STATIC_DRAW);
   manager->numLights = 0;
 }
 
@@ -96,10 +96,10 @@ void initProjectionMatrixManager(ProjectionManager *manager) {
   manager->projectionBuffer = malloc(
       sizeof(ProjectionInfo)); // TODO : maybe define a struct for great clarity
 
-  glBindBuffer(GL_UNIFORM_BUFFER, manager->protjectionUBO);
-  glBufferData(GL_UNIFORM_BUFFER, sizeof(ProjectionInfo), NULL,
-               GL_DYNAMIC_DRAW);
-  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+  // glBindBuffer(GL_UNIFORM_BUFFER, manager->protjectionUBO);
+  // glBufferData(GL_UNIFORM_BUFFER, sizeof(ProjectionInfo), NULL,
+  //              GL_DYNAMIC_DRAW);
+  // glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 void setProjectionMatrixManager(ProjectionManager *manager, Camera *camera) {
   getViewMatrix(camera, manager->projectionBuffer->viewMatrix);
@@ -124,8 +124,8 @@ void bindProjectionManagerShader(ProjectionManager *manager,
 
 void flushProjectionMatrixManager(ProjectionManager *manager) {
   glBindBuffer(GL_UNIFORM_BUFFER, manager->protjectionUBO);
-  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(ProjectionInfo),
-                  manager->projectionBuffer);
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(ProjectionInfo),
+                  manager->projectionBuffer, GL_STATIC_DRAW);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
@@ -149,10 +149,9 @@ uint addObjectTexture(TextureManager *manager, GameObject *object) {
   if (object->numTextures <= 0)
     return TEXTURE_UNDEFINED_INDEX;
 
-  uint64_t handle = glGetTextureSamplerHandleARB(object->textures->glID,
-                                                 object->sampler->glID);
+  uint64_t handle = glGetTextureHandleARB(object->textures->glID);
 
-  uint index;
+  uint index = 0;
   for (; index < manager->numHandles; index++)
     if (handle == manager->handles[index])
       break;
@@ -186,10 +185,16 @@ void flushTextureManager(TextureManager *manager) {
     glMakeTextureHandleResidentARB(manager->handles[i]);
   // TODO: MAKE THEM NON RESIDENT LATER
 
-  glNamedBufferData(manager->textureHandleSSBO,
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, manager->textureHandleSSBO);
+  glBufferData(GL_SHADER_STORAGE_BUFFER,
                     sizeof(uint64_t) * manager->numHandles, manager->handles,
                     GL_STATIC_DRAW);
 
+}
+
+void cleanUpTextureManager(TextureManager* manager){
+    for (int i = 0; i < manager->numHandles; i++)
+      glMakeTextureHandleNonResidentARB(manager->handles[i]);
   manager->numHandles = 0;
 }
 

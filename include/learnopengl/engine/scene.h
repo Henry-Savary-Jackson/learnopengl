@@ -1,5 +1,6 @@
 #pragma once
 
+#include "learnopengl/engine/shader.h"
 #include <learnopengl/engine/batch_render.h>
 #include <learnopengl/engine/camera.h>
 #include <learnopengl/engine/object.h>
@@ -36,6 +37,9 @@ typedef struct{
     uint numObjectsDynamic;
     uint numObjectsStatic;
 
+    uint numShaders;
+    ShaderProgram** shaders;
+    uint maxShaders;
 } Scene;
 
 void initScene(Scene* scene,Camera* camera, uint maxShaders, uint maxObjects, uint maxLights);

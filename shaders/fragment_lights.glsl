@@ -1,6 +1,5 @@
 #version 460 core
 #extension GL_ARB_bindless_texture : require
-#extension GL_EXT_nonuniform_qualifier : require
 
 in vec2 texPos;
 in vec3 normalCamera;
@@ -28,8 +27,8 @@ layout (std430) buffer Lights{
     LightSource lightData[];
 } ;
 
-layout (std430) buffer Textures{
-    sampler2D textures[];
+layout (std430) readonly buffer Textures{
+   sampler2D textures[50];
 } ;
 
 // get the contribution of one point light to the pixel
@@ -67,5 +66,13 @@ void main()
 
         colour += getColourLight(lightData[i]);
     }
-    FragColor = texture(textures[textureIndexFrag],texPos)* vec4(colour,1) ;
+    // FragColor =  vec4(colour,1) ;
+    // sampler2D s = textures[textureIndexFrag];
+    // if (textures[textureIndexFrag+1] == 1){
+        // FragColor =  vec4(1,0,0 ,1) ;
+    // }else{
+        // FragColor =  vec4(0,1,0 ,1) ;
+    FragColor = texture(textures[textureIndexFrag], texPos) *  vec4(colour,1) ;
+    // }
+
 }

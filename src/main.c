@@ -215,7 +215,7 @@ int main() {
 
 
   srand(10);
-  int numObjects = 100;
+  int numObjects = 1000;
   GameObject *objects = malloc(numObjects * sizeof(GameObject));
   for (int i = 0; i < numObjects; i++) {
     initGameObject(&objects[i]);
@@ -242,7 +242,7 @@ int main() {
     addObjectToScene(&scene, &objects[i], DYNAMIC_OBJ);
   }
   objects[0].position = (vec3s){0, 0, -2};
-  objects[0].rotation = (vec3s){0, 0, 0};
+  objects[0].rotation = (vec3s){0, 30, 0};
   // Renderer newRender;
 
   glEnable(GL_DEPTH_TEST);
@@ -262,7 +262,6 @@ int main() {
     glClearColor(0.2f, 0.4f, 0.4f, 1.0f);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 
     // -- GAME LOGIC --
 

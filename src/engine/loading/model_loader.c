@@ -35,13 +35,13 @@ uint decodeFacePoint(char *facePoint, Vertex *vertex, ArrayList_vec3 *normals,
                 : INT_MIN;
 
   uint result = getAt_vec3(normals, normalIndex, &vertex->normal);
-  if (!result)
+  if (result)
     vertex->normal = (vec3s){0, 0, 0};
   getAt_vec3(positions, posIndex, &vertex->pos);
-  if (!result)
+  if (result)
     vertex->pos = (vec3s){0, 0, 0};
   result = getAt_vec2(textureCoords, uvIndex, &vertex->texPos);
-  if (!result)
+  if (result)
     vertex->texPos = (vec2s){0, 0};
 
   return 0;

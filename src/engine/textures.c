@@ -17,8 +17,8 @@ void initTexture(Texture *texture, const char *name, const char *path) {
   unsigned char *data =
       stbi_load(path, &(texture->width), &(texture->height), &nrChannels, 0);
   if (data) {
-    glTextureStorage2D(texture->glID, 1, nrChannels == 4?GL_RGBA: GL_RGB, texture->width, texture->height  );
-    glTextureSubImage2D(texture->glID, 0, 0, 0 ,texture->width, texture->height, nrChannels == 4?GL_RGBA: GL_RGB, GL_UNSIGNED_BYTE , data);
+    glTextureStorage2D(texture->glID, 1, nrChannels == 4?GL_RGBA8: GL_RGB8, texture->width, texture->height  );
+    glTextureSubImage2D(texture->glID, 0, 0, 0 ,texture->width, texture->height, nrChannels == 4?GL_RGBA: GL_RGB,  GL_UNSIGNED_BYTE, data);
 
     stbi_image_free(data);
 
