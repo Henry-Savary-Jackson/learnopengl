@@ -151,3 +151,6 @@ void copyTransformationToBuffer(BatchRenderer* renderer);
 #define BATCH_RENDER_NO_SPACE -1
 #define BATCH_RENDER_OBJ_EXCEEDS -2
 #define BATCH_RENDER_OK 0
+
+uint addMeshesToRenderer(BatchRenderer *renderer, GameObject *object,
+                         uint meshIndex) ;

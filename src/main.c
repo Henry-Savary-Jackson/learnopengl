@@ -209,18 +209,16 @@ int main() {
   Mesh bullMesh ;
   loadModelFromFile("models/bull.obj", &bullMesh);
 
-  // printf("num elements: %d, num vertices:%d", elementIndex.length,vertices.length );
-
-
-
+  Mesh dragonMesh ;
+  loadModelFromFile("models/bunny.obj", &dragonMesh);
 
   srand(10);
-  int numObjects = 1000;
+  int numObjects = 100;
   GameObject *objects = malloc(numObjects * sizeof(GameObject));
   for (int i = 0; i < numObjects; i++) {
     initGameObject(&objects[i]);
-    scaleGameObjectFloat(&objects[i], 0.01);
-    setMeshGameObject(&objects[i], &bullMesh);
+    scaleGameObjectFloat(&objects[i], i %2?  0.01: 10 );
+    setMeshGameObject(&objects[i], i % 2 ?&bullMesh: &dragonMesh);
     setShaderProgramGameObject(&objects[i], &shaderProgram);
     setTexturesGameObject(objects + i, textures, 1);
     setMaterialGameObject(&objects[i], &material);
@@ -296,6 +294,7 @@ int main() {
               (int)(1 / frameTime));
       glfwSetWindowTitle(window, frameTimeStr);
     }
+    // printf("frame done!\n");
   }
 
   freeScene(&scene);
@@ -306,6 +305,7 @@ int main() {
   freeShaderProgram(&lightShaderProgram);
   freeMesh(&meshCube);
   freeMesh(&bullMesh);
+  freeMesh(&dragonMesh);
   freeSampler(&sampler);
 
   glfwTerminate();

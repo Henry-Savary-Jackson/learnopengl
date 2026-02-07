@@ -40,6 +40,10 @@ typedef struct{
     uint numShaders;
     ShaderProgram** shaders;
     uint maxShaders;
+
+    uint* textureHandles;
+    uint numTextures;
+    uint maxTextures;
 } Scene;
 
 void initScene(Scene* scene,Camera* camera, uint maxShaders, uint maxObjects, uint maxLights);

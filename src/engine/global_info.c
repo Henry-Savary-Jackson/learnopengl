@@ -140,8 +140,6 @@ void initTextureManager(TextureManager *manager, uint maxTextures) {
   manager->numHandles = 0;
   manager->handles = malloc(sizeof(int64_t) * maxTextures);
   manager->maxTextures = maxTextures;
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SHADER_TEXTURE_BINDING,
-                     manager->textureHandleSSBO);
 }
 
 uint addObjectTexture(TextureManager *manager, GameObject *object) {
@@ -149,7 +147,7 @@ uint addObjectTexture(TextureManager *manager, GameObject *object) {
   if (object->numTextures <= 0)
     return TEXTURE_UNDEFINED_INDEX;
 
-  uint64_t handle = glGetTextureHandleARB(object->textures->glID);
+  uint64_t handle = glGetTextureSamplerHandleARB(object->textures->glID, object->sampler->glID);
 
   uint index = 0;
   for (; index < manager->numHandles; index++)
@@ -170,32 +168,26 @@ uint addObjectTexture(TextureManager *manager, GameObject *object) {
 void bindTextureManagerToShader(TextureManager *manager,
                                 ShaderProgram *shaderProgram) {
 
-  uint modelsIndex = glGetProgramResourceIndex(
-      shaderProgram->id, GL_SHADER_STORAGE_BLOCK, SHADER_BUFFER_TEXTURE_NAME);
+  uint modelsIndex = glGetUniformBlockIndex(
+      shaderProgram->id,  SHADER_BUFFER_TEXTURE_NAME);
 
   if (modelsIndex != GL_INVALID_INDEX) {
-    glShaderStorageBlockBinding(shaderProgram->id, modelsIndex,
+    glUniformBlockBinding(shaderProgram->id, modelsIndex,
                                 SHADER_TEXTURE_BINDING);
+    glBindBufferBase(GL_UNIFORM_BUFFER, SHADER_TEXTURE_BINDING, manager->textureHandleSSBO);
   }
 }
 
 void flushTextureManager(TextureManager *manager) {
 
-  for (int i = 0; i < manager->numHandles; i++)
-    glMakeTextureHandleResidentARB(manager->handles[i]);
   // TODO: MAKE THEM NON RESIDENT LATER
 
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, manager->textureHandleSSBO);
-  glBufferData(GL_SHADER_STORAGE_BUFFER,
+  glBindBuffer(GL_UNIFORM_BUFFER, manager->textureHandleSSBO);
+  glBufferData(GL_UNIFORM_BUFFER,
                     sizeof(uint64_t) * manager->numHandles, manager->handles,
                     GL_STATIC_DRAW);
 
 }
 
-void cleanUpTextureManager(TextureManager* manager){
-    for (int i = 0; i < manager->numHandles; i++)
-      glMakeTextureHandleNonResidentARB(manager->handles[i]);
-  manager->numHandles = 0;
-}
 
 void freeTextureManager(TextureManager *manager) { free(manager->handles); }

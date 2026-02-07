@@ -83,4 +83,3 @@ void bindTextureManagerToShader(TextureManager *manager,
                                 ShaderProgram *shaderProgram);
 void flushTextureManager(TextureManager *manager);
 void freeTextureManager(TextureManager *manager);
-void cleanUpTextureManager(TextureManager* manager);

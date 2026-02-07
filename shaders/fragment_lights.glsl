@@ -1,5 +1,6 @@
 #version 460 core
 #extension GL_ARB_bindless_texture : require
+layout (bindless_sampler) uniform;
 
 in vec2 texPos;
 in vec3 normalCamera;
@@ -27,7 +28,7 @@ layout (std430) buffer Lights{
     LightSource lightData[];
 } ;
 
-layout (std430) readonly buffer Textures{
+layout (std140) uniform Textures{
    sampler2D textures[50];
 } ;
 
@@ -66,13 +67,7 @@ void main()
 
         colour += getColourLight(lightData[i]);
     }
-    // FragColor =  vec4(colour,1) ;
-    // sampler2D s = textures[textureIndexFrag];
-    // if (textures[textureIndexFrag+1] == 1){
-        // FragColor =  vec4(1,0,0 ,1) ;
-    // }else{
-        // FragColor =  vec4(0,1,0 ,1) ;
-    FragColor = texture(textures[textureIndexFrag], texPos) *  vec4(colour,1) ;
-    // }
+    sampler2D sampler_var = textures[textureIndexFrag];
+    FragColor = texture(sampler_var, texPos) *  vec4(colour,1) ;
 
 }

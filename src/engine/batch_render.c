@@ -392,9 +392,46 @@ uint copyObjectToRenderingData(BatchRenderer *renderer,
   return BATCH_RENDER_OK;
 }
 
+uint addMeshesToRenderer(BatchRenderer *renderer, GameObject *object,
+                         uint meshIndex) {
+  if (renderer->maxVertex < object->mesh->numVertices ||
+      renderer->maxElements < object->mesh->numElements) {
+    // this one object cannot fit in the space given to render
+    return BATCH_RENDER_OBJ_EXCEEDS;
+  }
+  int newNumVertices = renderer->numVertices + object->mesh->numVertices;
+  int newNumElements = renderer->numElements + object->mesh->numElements;
+
+  if (renderer->maxVertex <= newNumVertices ||
+      renderer->maxElements <= newNumElements) {
+    // there is no more space for the current object
+    // calling function can choose to flush the renderer or simply stop
+    // rendering
+    return BATCH_RENDER_NO_SPACE;
+  }
+
+  renderer->meshes[meshIndex] =
+      (MeshInfo){.mesh = object->mesh,
+                 .elementIndex = renderer->numElements,
+                 .vertexIndex = renderer->numVertices};
+
+  memcpy(renderer->vertexBuffer + renderer->numVertices, object->mesh->vertices,
+         object->mesh->numVertices * sizeof(Vertex));
+
+  // add elemend index dat to EBO
+  memcpy(renderer->elementsBuffer + renderer->numElements,
+         object->mesh->elementOrder, object->mesh->numElements * sizeof(uint));
+
+  renderer->numElements = newNumElements;
+  renderer->numVertices = newNumVertices;
+  renderer->numMeshes++;
+
+  return BATCH_RENDER_OK;
+}
+
 uint copyObjectToBuffer(BatchRenderer *renderer, GameObject *object) {
 
-  if (renderer->maxModels <= renderer->numModels )
+  if (renderer->maxModels <= renderer->numModels)
     return BATCH_RENDER_NO_SPACE;
 
   uint shaderIndex = 0;
@@ -403,47 +440,18 @@ uint copyObjectToBuffer(BatchRenderer *renderer, GameObject *object) {
         object->shaderProgram->id)
       break;
 
-  assert(shaderIndex != renderer->maxShaders);
+  assert(shaderIndex < renderer->maxShaders);
 
   uint meshIndex = 0;
   for (; meshIndex < renderer->numMeshes; meshIndex++)
     if (renderer->meshes[meshIndex].mesh->id == object->mesh->id)
       break;
 
-  assert(shaderIndex != renderer->maxModels);
+  assert(meshIndex < renderer->maxModels);
   if (meshIndex == renderer->numMeshes) {
-    if (renderer->maxVertex < object->mesh->numVertices ||
-        renderer->maxElements < object->mesh->numElements) {
-      // this one object cannot fit in the space given to render
-      return BATCH_RENDER_OBJ_EXCEEDS;
-    }
-    int newNumVertices = renderer->numVertices + object->mesh->numVertices;
-    int newNumElements = renderer->numElements + object->mesh->numElements;
-
-    if (renderer->maxVertex <= newNumVertices ||
-        renderer->maxElements <= newNumElements ) {
-      // there is no more space for the current object
-      // calling function can choose to flush the renderer or simply stop
-      // rendering
-      return BATCH_RENDER_NO_SPACE;
-    }
-
-    renderer->meshes[meshIndex] =
-        (MeshInfo){.mesh = object->mesh,
-                   .elementIndex = renderer->numElements,
-                   .vertexIndex = renderer->numVertices};
-
-    memcpy(renderer->vertexBuffer + renderer->numVertices,
-           object->mesh->vertices, object->mesh->numVertices * sizeof(Vertex));
-
-    // add elemend index dat to EBO
-    memcpy(renderer->elementsBuffer + renderer->numElements,
-           object->mesh->elementOrder,
-           object->mesh->numElements * sizeof(uint));
-
-    renderer->numElements = newNumElements;
-    renderer->numVertices += newNumVertices;
-    renderer->numMeshes++;
+    uint result = addMeshesToRenderer(renderer, object, meshIndex);
+    if (result != BATCH_RENDER_OK)
+      return result;
   }
 
   if (shaderIndex == renderer->numShaders) {
@@ -480,9 +488,9 @@ void flush(BatchRenderer *renderer) {
       !renderer->numDrawCommands || !renderer->numShaders)
     return;
 
-  sendDataToGPU(renderer);
 
   flushTextureManager(&renderer->textureManager);
+  sendDataToGPU(renderer);
 
   draw(renderer);
 
@@ -492,8 +500,6 @@ void flush(BatchRenderer *renderer) {
   renderer->numModels = 0;
   renderer->numShaders = 0;
   renderer->numDrawCommands = 0;
-  cleanUpTextureManager(&renderer->textureManager);
-
 }
 
 void renderObjectBatch(BatchRenderer *renderer, GameObject *object) {
@@ -501,7 +507,7 @@ void renderObjectBatch(BatchRenderer *renderer, GameObject *object) {
   uint iters = 0;
   while (((retCode = copyObjectToBuffer(renderer, object)) ==
           BATCH_RENDER_NO_SPACE) &&
-         iters < 5) {
+         iters < 20) {
     flush(renderer);
     iters++;
   }

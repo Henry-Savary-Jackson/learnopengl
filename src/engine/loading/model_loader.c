@@ -34,12 +34,16 @@ uint decodeFacePoint(char *facePoint, Vertex *vertex, ArrayList_vec3 *normals,
                 ? uvIndex < 0 ? textureCoords->length - uvIndex : uvIndex - 1
                 : INT_MIN;
 
+  // assert(normalIndex >= 0 && normalIndex < normals->length);
   uint result = getAt_vec3(normals, normalIndex, &vertex->normal);
   if (result)
     vertex->normal = (vec3s){0, 0, 0};
-  getAt_vec3(positions, posIndex, &vertex->pos);
-  if (result)
-    vertex->pos = (vec3s){0, 0, 0};
+  // assert(posIndex >= 0 && posIndex < positions->length);
+  result = getAt_vec3(positions, posIndex, &vertex->pos);
+  assert(!result);
+  // if (result)
+  //   vertex->pos = (vec3s){0, 0, 0};
+  // assert(uvIndex >= 0 && uvIndex < textureCoords->length);
   result = getAt_vec2(textureCoords, uvIndex, &vertex->texPos);
   if (result)
     vertex->texPos = (vec2s){0, 0};
