@@ -23,7 +23,7 @@ static const uint SHADER_TEXTURE_BINDING = 5;
 
 static const char *SHADER_BUFFER_LIGHT_NAME = "Lights";
 static const char *UNIFORM_VIEW_PROJ_NAME = "ViewProjection";
-static const char *UNIFORM_MATERIAL_NAME = "Material";
+static const char *UNIFORM_MATERIAL_NAME = "Materials";
 static const char *SHADER_BUFFER_MODELS_NAME = "ModelTransforms";
 static const char *SHADER_BUFFER_INV_MODELS_NAME = "InverseModelTransforms";
 static const char *SHADER_BUFFER_TEXTURE_NAME = "Textures";
@@ -80,8 +80,8 @@ void flushLightManager(LightInfoManager *manager) {
   *start = manager->numLights;
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, manager->lightsSSBO);
   glBufferData(GL_SHADER_STORAGE_BUFFER,
-                  sizeof(vec4) + sizeof(LightData) * manager->numLights,
-                  manager->lights, GL_STATIC_DRAW);
+               sizeof(vec4) + sizeof(LightData) * manager->numLights,
+               manager->lights, GL_STATIC_DRAW);
   manager->numLights = 0;
 }
 
@@ -125,7 +125,7 @@ void bindProjectionManagerShader(ProjectionManager *manager,
 void flushProjectionMatrixManager(ProjectionManager *manager) {
   glBindBuffer(GL_UNIFORM_BUFFER, manager->protjectionUBO);
   glBufferData(GL_UNIFORM_BUFFER, sizeof(ProjectionInfo),
-                  manager->projectionBuffer, GL_STATIC_DRAW);
+               manager->projectionBuffer, GL_STATIC_DRAW);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
@@ -147,7 +147,8 @@ uint addObjectTexture(TextureManager *manager, GameObject *object) {
   if (object->numTextures <= 0)
     return TEXTURE_UNDEFINED_INDEX;
 
-  uint64_t handle = glGetTextureSamplerHandleARB(object->textures->glID, object->sampler->glID);
+  uint64_t handle = glGetTextureSamplerHandleARB(object->textures->glID,
+                                                 object->sampler->glID);
 
   uint index = 0;
   for (; index < manager->numHandles; index++)
@@ -168,26 +169,70 @@ uint addObjectTexture(TextureManager *manager, GameObject *object) {
 void bindTextureManagerToShader(TextureManager *manager,
                                 ShaderProgram *shaderProgram) {
 
-  uint modelsIndex = glGetUniformBlockIndex(
-      shaderProgram->id,  SHADER_BUFFER_TEXTURE_NAME);
+  uint modelsIndex =
+      glGetUniformBlockIndex(shaderProgram->id, SHADER_BUFFER_TEXTURE_NAME);
 
   if (modelsIndex != GL_INVALID_INDEX) {
     glUniformBlockBinding(shaderProgram->id, modelsIndex,
-                                SHADER_TEXTURE_BINDING);
-    glBindBufferBase(GL_UNIFORM_BUFFER, SHADER_TEXTURE_BINDING, manager->textureHandleSSBO);
+                          SHADER_TEXTURE_BINDING);
+    glBindBufferBase(GL_UNIFORM_BUFFER, SHADER_TEXTURE_BINDING,
+                     manager->textureHandleSSBO);
   }
 }
 
 void flushTextureManager(TextureManager *manager) {
-
-  // TODO: MAKE THEM NON RESIDENT LATER
-
   glBindBuffer(GL_UNIFORM_BUFFER, manager->textureHandleSSBO);
-  glBufferData(GL_UNIFORM_BUFFER,
-                    sizeof(uint64_t) * manager->numHandles, manager->handles,
-                    GL_STATIC_DRAW);
-
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(uint64_t) * manager->numHandles,
+               manager->handles, GL_STATIC_DRAW);
 }
 
+void freeTextureManager(TextureManager *manager) {
+  glDeleteBuffers(1, &manager->textureHandleSSBO);
+  free(manager->handles);
+}
 
-void freeTextureManager(TextureManager *manager) { free(manager->handles); }
+void initMaterialManager(MaterialManager *manager, uint maxMaterials) {
+  manager->maxMaterials = maxMaterials;
+  manager->numMaterials = 0;
+  glGenBuffers(1, &manager->materialUBO);
+  manager->materialsBuffer =
+      malloc(sizeof(MaterialData) * manager->maxMaterials);
+  manager->ids = malloc(sizeof(uint) * maxMaterials);
+}
+
+void addMaterialToManager(MaterialManager *manager, Material *material) {
+  uint materialIndex = 0;
+  for (; materialIndex < manager->numMaterials; materialIndex++)
+    if (manager->ids[materialIndex] == material->id)
+      break;
+
+  if (materialIndex == manager->numMaterials) {
+    manager->materialsBuffer[manager->numMaterials] = material->material;
+    manager->ids[manager->numMaterials] = material->id;
+    manager->numMaterials++;
+  }
+}
+void bindMaterialManagerShader(MaterialManager *manager,
+                               ShaderProgram *shaderProgram) {
+  uint materialsIndex =
+      glGetUniformBlockIndex(shaderProgram->id, UNIFORM_MATERIAL_NAME);
+
+  if (materialsIndex != GL_INVALID_INDEX) {
+    glUniformBlockBinding(shaderProgram->id, materialsIndex,
+                          UNIFORM_MATERIAL_BINDING);
+    glBindBufferBase(GL_UNIFORM_BUFFER, UNIFORM_MATERIAL_BINDING,
+                     manager->materialUBO);
+  }
+}
+
+void flushMaterialManager(MaterialManager *manager) {
+  glBindBuffer(GL_UNIFORM_BUFFER, manager->materialUBO);
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(MaterialData) * manager->numMaterials,
+               manager->materialsBuffer, GL_STATIC_DRAW);
+}
+
+void freeMaterialManager(MaterialManager *manager) {
+  glDeleteBuffers(1, &(manager->materialUBO));
+  free(manager->materialsBuffer);
+  free(manager->ids);
+}

@@ -1,7 +1,5 @@
 #include "learnopengl/engine/object.h"
 #include "learnopengl/engine/shader.h"
-#include "learnopengl/utils/arraylist.h"
-#include "learnopengl/utils/map.h"
 #include <assert.h>
 #include <cglm/mat4.h>
 #include <cglm/types.h>
@@ -24,9 +22,8 @@ static const uint ATTR_LOCATION_UV = 1;
 static const uint ATTR_LOCATION_NORM = 2;
 static const uint ATTR_LOCATION_MODEL = 3;
 static const uint ATTR_LOCATION_INV_MODEL = 7;
-static const uint ATTR_LOCATION_MATERIAL_COLOUR = 11;
-static const uint ATTR_LOCATION_MATERIAL_COEFF = 12;
-static const uint ATTR_LOCATION_TEXTURE_INDEX = 13;
+static const uint ATTR_LOCATION_MATERIAL_INDEX = 11;
+static const uint ATTR_LOCATION_TEXTURE_INDEX = 12;
 
 void setUpBuffers(BatchRenderer *renderer) {
   // Initialize VAO
@@ -108,28 +105,24 @@ void setUpBuffers(BatchRenderer *renderer) {
   glGenBuffers(1, &(renderer->materialBO));
   glBindBuffer(GL_ARRAY_BUFFER, renderer->materialBO);
 
-  glVertexAttribPointer(ATTR_LOCATION_MATERIAL_COLOUR, 3, GL_FLOAT, GL_FALSE,
-                        sizeof(Material), (void *)offsetof(Material, colour));
+  glVertexAttribPointer(ATTR_LOCATION_MATERIAL_INDEX, 1, GL_FLOAT, GL_FALSE,
+                        sizeof(uint), NULL);
 
-  glEnableVertexAttribArray(ATTR_LOCATION_MATERIAL_COLOUR);
-  glVertexAttribDivisor(ATTR_LOCATION_MATERIAL_COLOUR, 1);
-
-  glVertexAttribPointer(ATTR_LOCATION_MATERIAL_COEFF, 3, GL_FLOAT, GL_FALSE,
-                        sizeof(Material),
-                        (void *)offsetof(Material, ambientCoeffient));
-
-  glEnableVertexAttribArray(ATTR_LOCATION_MATERIAL_COEFF);
-  glVertexAttribDivisor(ATTR_LOCATION_MATERIAL_COEFF, 1);
+  glEnableVertexAttribArray(ATTR_LOCATION_MATERIAL_INDEX);
+  glVertexAttribDivisor(ATTR_LOCATION_MATERIAL_INDEX, 1);
 
   glGenBuffers(1, &(renderer->textureIndexVBO));
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, renderer->textureIndexVBO);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  glBindBuffer(GL_ARRAY_BUFFER, renderer->textureIndexVBO);
+  glVertexAttribPointer(ATTR_LOCATION_TEXTURE_INDEX, 1, GL_FLOAT, GL_FALSE,
+                        sizeof(uint), NULL);
+  glEnableVertexAttribArray(ATTR_LOCATION_TEXTURE_INDEX);
+  glVertexAttribDivisor(ATTR_LOCATION_TEXTURE_INDEX, 1);
+
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
   glGenBuffers(1, &(renderer->drawCommandsBO));
   glBindBuffer(GL_DRAW_INDIRECT_BUFFER, renderer->drawCommandsBO);
-
   glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
   // unbind
@@ -149,7 +142,7 @@ void initBatchRenderer(BatchRenderer *renderer, uint maxVertices,
   renderer->maxShaders = maxShaders;
   renderer->numDrawCommands = 0;
 
-  renderer->materialsBuffer = malloc(sizeof(Material) * renderer->maxModels);
+  renderer->materialsBuffer = malloc(sizeof(MaterialData) * renderer->maxModels);
   renderer->modelsBuffer = malloc(sizeof(mat4) * renderer->maxModels);
   renderer->invModelsBuffer = malloc(sizeof(mat4) * renderer->maxModels);
   renderer->textureIndicesBuffer = malloc(sizeof(uint) * renderer->maxModels);
@@ -169,7 +162,6 @@ void initBatchRenderer(BatchRenderer *renderer, uint maxVertices,
 }
 
 void vertices_func(BatchRenderer *renderer) {
-
   glNamedBufferData(renderer->vertexVbo, sizeof(Vertex) * renderer->numVertices,
                     renderer->vertexBuffer, GL_STATIC_DRAW);
 }
@@ -178,7 +170,7 @@ void initRenderData(BatchRenderer *renderer, ShaderProgram *shaderProgram) {
   // append to last index
   renderer->renderingData[renderer->numShaders] = (RenderingData){
       .shaderProgram = shaderProgram,
-      .materials = malloc(sizeof(Material *) * renderer->maxModels),
+      .materialIndices = malloc(sizeof(MaterialData *) * renderer->maxModels),
       .models = malloc(sizeof(mat4 *) * renderer->maxModels),
       .invModels = malloc(sizeof(mat4 *) * renderer->maxModels),
       .numModels = malloc(sizeof(uint) * renderer->maxModels),
@@ -230,7 +222,7 @@ void sendRenderDataToBuffer(BatchRenderer *renderer,
     memcpy(renderer->invModelsBuffer + *totalModels,
            renderingData->invModels[i], sizeof(mat4) * numModels);
     memcpy(renderer->materialsBuffer + *totalModels,
-           renderingData->materials[i], sizeof(mat4) * numModels);
+           renderingData->materialIndices[i], sizeof(mat4) * numModels);
     memcpy(renderer->textureIndicesBuffer + *totalModels,
            renderingData->textureIndices[i], sizeof(uint) * numModels);
 
@@ -249,7 +241,7 @@ void freeRenderData(RenderingData *renderingData) {
   for (int i = 0; i < renderingData->numDrawCommands; i++) {
     free(renderingData->models[i]);
     free(renderingData->invModels[i]);
-    free(renderingData->materials[i]);
+    free(renderingData->materialIndices[i]);
     free(renderingData->textureIndices[i]);
   }
   free(renderingData->commands);
@@ -257,7 +249,7 @@ void freeRenderData(RenderingData *renderingData) {
   free(renderingData->models);
   free(renderingData->invModels);
   free(renderingData->textureIndices);
-  free(renderingData->materials);
+  free(renderingData->materialIndices);
   free(renderingData->meshIds);
 }
 
@@ -270,7 +262,7 @@ void matrices(BatchRenderer *renderer) {
 }
 void materials(BatchRenderer *renderer) {
   glNamedBufferData(renderer->materialBO,
-                    sizeof(Material) * renderer->numModels,
+                    sizeof(MaterialData) * renderer->numModels,
                     renderer->materialsBuffer, GL_STATIC_DRAW);
 }
 void drawCommandBuffer(BatchRenderer *renderer) {
@@ -358,8 +350,8 @@ uint copyObjectToRenderingData(BatchRenderer *renderer,
         malloc(sizeof(mat4) * renderer->maxModels);
     renderingData->models[meshIndex] =
         malloc(sizeof(mat4) * renderer->maxModels);
-    renderingData->materials[meshIndex] =
-        malloc(sizeof(Material) * renderer->maxModels);
+    renderingData->materialIndices[meshIndex] =
+        malloc(sizeof(uint) * renderer->maxModels);
     renderingData->textureIndices[meshIndex] =
         malloc(sizeof(uint) * renderer->maxModels);
     renderingData->numDrawCommands++;
@@ -379,7 +371,7 @@ uint copyObjectToRenderingData(BatchRenderer *renderer,
   memcpy(renderingData->models[meshIndex] + offset, model, sizeof(mat4));
   memcpy(renderingData->invModels[meshIndex] + offset, modelInverse,
          sizeof(mat4));
-  renderingData->materials[meshIndex][offset] = *object->material;
+  renderingData->materialIndices[meshIndex][offset] = object->material->id;
 
   // INDEX 0 is always some default texture
   uint texIndex = addObjectTexture(&renderer->textureManager, object);

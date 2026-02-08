@@ -15,7 +15,7 @@ void setDirection(Camera *camera) {
   camera->direction = (vec3s){cos(pitch_rad) * cos(yaw_rad), sin(pitch_rad),
                               sin(yaw_rad) * cos(pitch_rad)};
   glm_normalize(camera->direction.raw);
-    
+
 }
 void initCamera(Camera *camera, vec3s position, float fov, uint width,
                 uint height) {
@@ -36,7 +36,7 @@ void getViewMatrix(Camera *camera, mat4 dest) {
 }
 
 void getProjectionMatrix(Camera *camera, mat4 dest) {
-  float aspect = camera->width / camera->height;
+  float aspect = (float)camera->width / camera->height;
   glm_perspective(camera->fov, aspect, 0.1f, 100.f, dest);
 }
 
@@ -47,8 +47,8 @@ void rotateCamera(Camera *camera, vec2 rotation) {
   glm_vec2_add(camera->angle.raw, rotation, camera->angle.raw);
   setDirection(camera);
 }
-void setCameraPos(Camera *camera, vec3s newPos) { 
-  camera->position = newPos; 
+void setCameraPos(Camera *camera, vec3s newPos) {
+  camera->position = newPos;
 }
 
 void setCameraAngles(Camera *camera, vec2s newAngle) {

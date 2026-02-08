@@ -41,7 +41,10 @@ typedef struct {
 
 typedef struct {
   uint materialUBO;
-  Material *material;
+  MaterialData* materialsBuffer;
+  uint* ids;
+  uint numMaterials;
+  uint maxMaterials;
 } MaterialManager;
 
 typedef struct {
@@ -69,8 +72,8 @@ void bindProjectionManagerShader(ProjectionManager *manager,
 void flushProjectionMatrixManager(ProjectionManager *manager);
 void freeProjectionManager(ProjectionManager *manager);
 
-void initMaterialManager(MaterialManager *manager);
-void setMaterialManagerMaterial(MaterialManager *manager, Material *material);
+void initMaterialManager(MaterialManager *manager, uint maxMaterials);
+void addMaterialToManager(MaterialManager *manager, Material *material) ;
 void bindMaterialManagerShader(MaterialManager *manager,
                                ShaderProgram *shaderProgram);
 void flushMaterialManager(MaterialManager *manager);

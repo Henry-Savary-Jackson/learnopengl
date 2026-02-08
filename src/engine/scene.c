@@ -98,9 +98,11 @@ void preLoop(Scene *scene) {
 }
 
 void renderLoop(Scene *scene) {
-  for (int i = 0; i < scene->numLights; i++) {
+  for (int i = 0; i < scene->numLights; i++)
     addLightToContext(&scene->renderingContext, scene->lights[i]);
-  }
+
+  for (int i = 0; i < scene->numObjectsDynamic; i++)
+    addObjectToContext(&scene->renderingContext, scene->dynamicObjects[i] );
 
   updateContext(&scene->renderingContext);
 

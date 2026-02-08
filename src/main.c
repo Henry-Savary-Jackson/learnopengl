@@ -29,6 +29,7 @@
 #include <learnopengl/utils/debug.h>
 
 void enableDebugOutput();
+const char * title_base = "Time per frame: , Frame rate: ";
 
 Camera *currentCam = NULL;
 vec3s camera_pos = {0, 0, 0};
@@ -156,10 +157,8 @@ int main() {
   initTexture(&texture, "container", "./textures/container.jpg");
 
   Texture textures[] = {texture};
-  Material material = {.ambientCoeffient = 4,
-                       .diffuseCoeffient = 1,
-                       .specularCoefficient = 1,
-                       .colour = {1,1,0}};
+  Material material ;
+  initMaterial(&material, (vec3s){1,1,0}, 4, 1, 1);
 
   Sampler sampler;
   initSampler(&sampler);
@@ -289,7 +288,7 @@ int main() {
     if (lastTime - lastFrameUpdate > 0.1) {
       lastFrameUpdate = lastTime;
       float frameTime = (lastTime - startTime);
-      char frameTimeStr[strlen("Time per frame: , Frame rate: ") + 15];
+      char frameTimeStr[ strlen(title_base)+ 15];
       sprintf(frameTimeStr, "Time per frame: %.5f , Frame rate: %d", frameTime,
               (int)(1 / frameTime));
       glfwSetWindowTitle(window, frameTimeStr);

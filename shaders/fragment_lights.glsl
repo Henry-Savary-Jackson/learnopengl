@@ -5,16 +5,16 @@ layout (bindless_sampler) uniform;
 in vec2 texPos;
 in vec3 normalCamera;
 in vec3 fragPosCamera;
-in Material {
-    vec3 colour;
-    float ambientCoeff;
-    float diffuseCoeff;
-    float specularCoeff;
-} material;
+flat in uint materialIndex;
 flat in uint  textureIndexFrag;
 
 out vec4 FragColor;
 
+
+struct Material {
+    vec4 colour;
+    vec4 coeffs;
+};
 
 struct LightSource
 {
@@ -28,17 +28,23 @@ layout (std430) buffer Lights{
     LightSource lightData[];
 } ;
 
+layout (std140) uniform Materials{
+    Material materials[100];
+};
+
 layout (std140) uniform Textures{
    sampler2D textures[50];
 } ;
 
 // get the contribution of one point light to the pixel
-vec3 getColourLight( inout LightSource light){
+vec3 getColourLight( inout LightSource light, inout Material material){
 
     vec3 lightColour = light.colour.rgb;
-    float ambientCoeff = material.ambientCoeff;
+    float ambientCoeff = material.coeffs.x;
+    // float ambientCoeff = 4;
     vec3 ambient =   lightColour  * ambientCoeff;
-    vec3 materialColour = material.colour;
+    vec3 materialColour = material.colour.rgb;
+    // vec3 materialColour = vec3(1,1,1);
 
     float power = light.power;
     vec3 lightPosCamera = light.positionCamera.xyz;
@@ -46,8 +52,10 @@ vec3 getColourLight( inout LightSource light){
     vec3 lightFragDiff = lightPosCamera-fragPosCamera;
     float intensity = 1/pow(length(lightFragDiff),2);
 
-    float diffuseCoeff = material.diffuseCoeff;
-    float specularCoeff = material.specularCoeff;
+    float diffuseCoeff = material.coeffs.y;
+    float specularCoeff = material.coeffs.z;
+    // float diffuseCoeff =1;
+    // float specularCoeff =1;
 
     vec3 lightDir = normalize( lightFragDiff );
     vec3 norm = normalize(normalCamera);
@@ -63,9 +71,9 @@ vec3 getColourLight( inout LightSource light){
 void main()
 {
     vec3 colour = vec3(0,0,0);
+    Material material = materials[materialIndex];
     for (int i = 0 ; i < numLights.x; i ++){
-
-        colour += getColourLight(lightData[i]);
+        colour += getColourLight(lightData[i], material );
     }
     sampler2D sampler_var = textures[textureIndexFrag];
     FragColor = texture(sampler_var, texPos) *  vec4(colour,1) ;

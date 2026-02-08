@@ -5,9 +5,14 @@
 #include <learnopengl/engine/shader.h>
 typedef struct {
     vec3s colour;
-    float ambientCoeffient;
+    alignas(16) float ambientCoeffient;
     float diffuseCoeffient;
     float specularCoefficient;
+} MaterialData;
+
+typedef struct {
+    uint id;
+    MaterialData material;
 } Material;
 
 
@@ -45,3 +50,5 @@ void translateGameObject(GameObject* object, vec3 translation);
 void rotateGameObjectAround(GameObject* object, float angle, vec3 axis , vec3 pivot);
 void scaleGameObject(GameObject* object, vec3 scale);
 void scaleGameObjectFloat(GameObject* object, float scale);
+
+void initMaterial(Material* material, vec3s colour , float ambient, float diffuse , float specular );

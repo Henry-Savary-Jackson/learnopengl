@@ -1,5 +1,6 @@
 #pragma once
-#include <math.h>
+#include <cglm/types-struct.h>
+#include <cglm/types.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -43,6 +44,7 @@ typedef ArrayList(int) ArrayList_i;
 #define REVERSE(T) FUNC_COMB(destroyArrayList,T)
 #define DESTROY_FUNC(T) FUNC_COMB(destroyArrayList,T)
 #define RESERVE_FUNC(T) FUNC_COMB(reserve,T)
+#define REMOVE_MANY_FUNC(T) FUNC_COMB(removeLast,T)
 
 #define initArrayList(A,T,S) FUNC_TYPE(uint) INIT_ARRAYLIST_FUNC(S) (A* a, int c, int g) { \
     if (c < 0) return -1; \
@@ -88,7 +90,7 @@ typedef ArrayList(int) ArrayList_i;
    return INSERT_DATA_AT_FUNC(S)(arraylist, index,  other->ptr, other->length);\
 }
 # define appendArrayList(A,T,S) FUNC_TYPE(uint) APPEND_FUNC(S) (A* arraylist, T value){ \
-    return INSERT_AT_FUNC(S)(arraylist, arraylist->length, value);\
+   return INSERT_DATA_AT_FUNC(S)(arraylist, arraylist->length,  &(value), 1);\
 }
 
 #define getAtArrayList(A,T,S) FUNC_TYPE(uint) GET_AT_FUNC(S) (A* arraylist, uint index, T* result){\
@@ -122,6 +124,12 @@ typedef ArrayList(int) ArrayList_i;
     return 0;\
 }
 
+#define removelast(A,T,S) FUNC_TYPE(uint) REMOVE_MANY_FUNC(S) (A* arraylist, uint count){\
+    assert(count <= arraylist->length);\
+    arraylist->length -= count;\
+    return 0;\
+}\
+
 initArrayList(ArrayList_f,float, f);
 insertDataArrayList(ArrayList_f, float, f);
 extendArrayList(ArrayList_f, float, f);
@@ -134,6 +142,7 @@ removeAtArrayList(ArrayList_f, float, f);
 popArrayList(ArrayList_f, float, f)
 destroyArrayList(ArrayList_f, float, f)
 reserveArrayList(ArrayList_f, float, f);
+removelast(ArrayList_f, float, f);
 
 initArrayList(ArrayList_i,int, i);
 insertDataArrayList(ArrayList_i, int, i);
@@ -147,6 +156,7 @@ removeAtArrayList(ArrayList_i, int, i);
 popArrayList(ArrayList_i, int, i);
 destroyArrayList(ArrayList_i, int,i);
 reserveArrayList(ArrayList_i, int, i);
+removelast(ArrayList_i, int, i);
 
 initArrayList(ArrayList_str,char *,str);
 insertDataArrayList(ArrayList_str, char *,str);
@@ -160,6 +170,7 @@ removeAtArrayList(ArrayList_str, char *, str);
 popArrayList(ArrayList_str, char *, str);
 destroyArrayList(ArrayList_str, char *,str);
 reserveArrayList(ArrayList_str, char *, str);
+removelast(ArrayList_str, char*, str);
 
 typedef ArrayList(void*) ArrayList_p;
 initArrayList(ArrayList_p,void*, p);
@@ -174,3 +185,20 @@ removeAtArrayList(ArrayList_p, void*, p);
 popArrayList(ArrayList_p, void*, p);
 destroyArrayList(ArrayList_p, void*,p);
 reserveArrayList(ArrayList_p,void*, p);
+removelast(ArrayList_p, void*, p);
+
+
+typedef ArrayList(mat4s) ArrayList_mat4;
+initArrayList(ArrayList_mat4,mat4s, mat4);
+insertDataArrayList(ArrayList_mat4, mat4s, mat4);
+extendArrayList(ArrayList_mat4, mat4s, mat4);
+extendArrayByArray(ArrayList_mat4, mat4s, mat4);
+insertArrayList(ArrayList_mat4, mat4s, mat4);
+insertWithArray(ArrayList_mat4, mat4s, mat4)
+appendArrayList(ArrayList_mat4, mat4s, mat4);
+getAtArrayList(ArrayList_mat4, mat4s, mat4);
+removeAtArrayList(ArrayList_mat4, mat4s, mat4);
+popArrayList(ArrayList_mat4, mat4s, mat4);
+destroyArrayList(ArrayList_mat4, mat4s,mat4);
+reserveArrayList(ArrayList_mat4,mat4s, mat4);
+removelast(ArrayList_mat4, mat4s, mat4);

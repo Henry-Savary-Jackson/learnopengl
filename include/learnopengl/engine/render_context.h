@@ -8,6 +8,7 @@
 typedef struct {
     ProjectionManager projectionManager;
     LightInfoManager lightManager;
+    MaterialManager materialManager;
     Camera* camera;
 } RenderingContext ;
 // add framebuffers to render to file/ screen/ sockets, etc...

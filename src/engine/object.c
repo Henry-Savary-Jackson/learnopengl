@@ -3,6 +3,7 @@
 #include <learnopengl/engine/object.h>
 #include <cglm/mat4.h>
 #include <cglm/vec4.h>
+#include <locale.h>
 #include <string.h>
 
 
@@ -70,4 +71,15 @@ void scaleGameObjectFloat(GameObject* object, float scale){
 
 void setMaterialGameObject(GameObject* object, Material* material){
     object->material = material;
+}
+
+static uint NUM_MATERIALS = 0;
+
+void initMaterial(Material *material, vec3s colour, float ambient, float diffuse, float specular){
+    material->id = NUM_MATERIALS;
+    NUM_MATERIALS++;
+    material->material.colour = colour;
+    material->material.ambientCoeffient = ambient;
+    material->material.diffuseCoeffient = diffuse;
+    material->material.specularCoefficient = specular;
 }

@@ -7,19 +7,13 @@ layout (location = 1 ) in vec2 aTexPos;
 layout (location = 2 ) in vec3 aNormal;
 layout (location = 3) in mat4 model;
 layout (location = 7) in mat4 invModel;
-layout (location = 11) in vec3 materialColour;
-layout (location = 12) in vec3 coefficients;
-layout (location = 13) in uint textureIndex;
+layout (location = 11) in uint matIndex;
+layout (location = 12) in uint textureIndex;
 
 out vec2 texPos ;
 out vec3 normalCamera;
 out vec3 fragPosCamera;
-out Material {
-    vec3 colour;
-    float ambientCoeff;
-    float diffuseCoeff;
-    float specularCoeff;
-} material;
+flat out uint materialIndex;
 flat out uint textureIndexFrag;
 
 layout(std140) uniform ViewProjection{
@@ -44,10 +38,7 @@ void main()
 
     gl_Position = projection * vertexPosCamera ;
 
-    material.colour = materialColour;
-    material.ambientCoeff = coefficients.x;
-    material.diffuseCoeff = coefficients.y;
-    material.specularCoeff = coefficients.z;
+    materialIndex = matIndex;
 
     textureIndexFrag = textureIndex;
 }

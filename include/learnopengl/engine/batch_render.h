@@ -1,6 +1,5 @@
 #pragma once
 #include "learnopengl/utils/arraylist.h"
-#include "learnopengl/utils/map.h"
 #include <learnopengl/engine/camera.h>
 #include <learnopengl/engine/global_info.h>
 #include <learnopengl/engine/light.h>
@@ -50,7 +49,7 @@ typedef struct {
   // buffers
   mat4** models;
   mat4** invModels;
-  Material** materials;
+  uint** materialIndices;
   uint** textureIndices;
 
   uint* numModels;
@@ -87,7 +86,7 @@ typedef struct {
   DrawElementsIndirectCommand* drawCommandBuffer;
   mat4* modelsBuffer;
   mat4* invModelsBuffer;
-  Material*materialsBuffer;
+  MaterialData*materialsBuffer;
   uint* textureIndicesBuffer;
 
   TextureManager textureManager;

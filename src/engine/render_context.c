@@ -9,12 +9,14 @@
 void initRenderingContext(RenderingContext* context, Camera* camera, uint maxLights){
     initLightInfoManager(&context->lightManager, maxLights);
     initProjectionMatrixManager(&context->projectionManager);
+    initMaterialManager(&context->materialManager, 100);
     context->camera = camera;
 }
 void updateContext(RenderingContext* context){
     flushLightManager(&context->lightManager);
     setProjectionMatrixManager(&context->projectionManager,context->camera);
     flushProjectionMatrixManager(&context->projectionManager);
+    flushMaterialManager(&context->materialManager);
 }
 
 void addLightToContext(RenderingContext* context, LightSource* light ){
@@ -22,12 +24,17 @@ void addLightToContext(RenderingContext* context, LightSource* light ){
     getViewMatrix(context->camera, view);
     addLightToManager(&context->lightManager, light, view);
 }
+void addObjectToContext(RenderingContext *context, GameObject *object){
+    addMaterialToManager(&context->materialManager, object->material);
+}
 
 void attachContextToShader(RenderingContext* context, ShaderProgram* shaderProgram){
     bindProjectionManagerShader(&context->projectionManager, shaderProgram);
     bindLightInfoManager(&context->lightManager, shaderProgram);
+    bindMaterialManagerShader(&context->materialManager, shaderProgram);
 }
 void freeRenderingContext(RenderingContext* context){
     freeLightManager(&context->lightManager);
+    freeMaterialManager(&context->materialManager);
     freeProjectionManager(&context->projectionManager);
 }
