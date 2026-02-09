@@ -81,7 +81,7 @@ void freeMaterialManager(MaterialManager *manager);
 
 void initTextureManager(TextureManager *manager, uint maxTextures);
 uint addObjectTexture(TextureManager *manager, GameObject *object);
-
+uint addTexture( TextureManager *manager, Texture *texture, Sampler* sampler);
 void bindTextureManagerToShader(TextureManager *manager,
                                 ShaderProgram *shaderProgram);
 void flushTextureManager(TextureManager *manager);

@@ -32,8 +32,8 @@ layout (std140) uniform Materials{
     Material materials[100];
 };
 
-layout (std140) uniform Textures{
-   sampler2D textures[50];
+layout (std430) readonly buffer  Textures{
+   uvec2 textures[100];
 } ;
 
 // get the contribution of one point light to the pixel
@@ -75,7 +75,6 @@ void main()
     for (int i = 0 ; i < numLights.x; i ++){
         colour += getColourLight(lightData[i], material );
     }
-    sampler2D sampler_var = textures[textureIndexFrag];
-    FragColor = texture(sampler_var, texPos) *  vec4(colour,1) ;
+    FragColor = texture(sampler2D(textures[textureIndexFrag]), texPos) *  vec4(colour,1) ;
 
 }

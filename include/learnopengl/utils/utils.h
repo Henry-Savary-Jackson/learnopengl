@@ -4,3 +4,12 @@
 
 #define MAX(x,y)  x>=y ? x:y
 #define MIN(x,y)  x>=y ? y:x
+
+static inline char separator()
+{
+#ifdef _WIN32
+    return '\\';
+#else
+    return '/';
+#endif
+}

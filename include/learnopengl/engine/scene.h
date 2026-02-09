@@ -1,6 +1,7 @@
 #pragma once
 
 #include "learnopengl/engine/shader.h"
+#include "learnopengl/engine/skybox.h"
 #include <learnopengl/engine/batch_render.h>
 #include <learnopengl/engine/camera.h>
 #include <learnopengl/engine/object.h>
@@ -41,14 +42,19 @@ typedef struct{
     ShaderProgram** shaders;
     uint maxShaders;
 
-    uint* textureHandles;
+    uint* textureIndicesDynamic;
+    uint* textureIndicesStatic;
     uint numTextures;
     uint maxTextures;
+
+
+    Skybox* skybox;
 } Scene;
 
 void initScene(Scene* scene,Camera* camera, uint maxShaders, uint maxObjects, uint maxLights);
 void addObjectToScene(Scene* scene, GameObject* object, uint objectType);
 void addLightToScene(Scene* scene, LightSource* light, uint objectType);
+void setSkybox(Scene* scene, Skybox* skybox, Texture* texture, Sampler* sampler);
 
 void preLoop(Scene* scene);
 

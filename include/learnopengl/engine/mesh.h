@@ -15,8 +15,10 @@ typedef struct{
 typedef struct{
     const char* name;
     uint glID;
-    int width;
-    int height;
+    uint width;
+    uint height;
+    uint depth;
+    uint textureType;
 } Texture;
 
 typedef struct {

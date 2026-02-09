@@ -114,12 +114,13 @@ void bindProjectionManagerShader(ProjectionManager *manager,
                                  ShaderProgram *shaderProgram) {
   uint viewProjBlockIndex =
       glGetUniformBlockIndex(shaderProgram->id, UNIFORM_VIEW_PROJ_NAME);
-  assert(viewProjBlockIndex != GL_INVALID_INDEX);
-  glUniformBlockBinding(shaderProgram->id, viewProjBlockIndex,
-                        UNIFORM_VIEW_PROJ_BINDING);
-  // link ubo to binding point
-  glBindBufferBase(GL_UNIFORM_BUFFER, UNIFORM_VIEW_PROJ_BINDING,
-                   manager->protjectionUBO);
+  if (viewProjBlockIndex != GL_INVALID_INDEX) {
+    glUniformBlockBinding(shaderProgram->id, viewProjBlockIndex,
+                          UNIFORM_VIEW_PROJ_BINDING);
+    // link ubo to binding point
+    glBindBufferBase(GL_UNIFORM_BUFFER, UNIFORM_VIEW_PROJ_BINDING,
+                     manager->protjectionUBO);
+  }
 }
 
 void flushProjectionMatrixManager(ProjectionManager *manager) {
@@ -143,13 +144,15 @@ void initTextureManager(TextureManager *manager, uint maxTextures) {
 }
 
 uint addObjectTexture(TextureManager *manager, GameObject *object) {
-
   if (object->numTextures <= 0)
     return TEXTURE_UNDEFINED_INDEX;
 
-  uint64_t handle = glGetTextureSamplerHandleARB(object->textures->glID,
-                                                 object->sampler->glID);
+  return addTexture(manager, object->textures, object->sampler);
+}
 
+uint addTexture(TextureManager *manager, Texture *texture, Sampler *sampler) {
+
+  uint64_t handle = glGetTextureSamplerHandleARB(texture->glID, sampler->glID);
   uint index = 0;
   for (; index < manager->numHandles; index++)
     if (handle == manager->handles[index])
@@ -161,6 +164,7 @@ uint addObjectTexture(TextureManager *manager, GameObject *object) {
   if (index == manager->numHandles) {
     manager->handles[index] = handle;
     manager->numHandles++;
+    glMakeTextureHandleResidentARB(handle);
   }
 
   return index;
@@ -169,13 +173,13 @@ uint addObjectTexture(TextureManager *manager, GameObject *object) {
 void bindTextureManagerToShader(TextureManager *manager,
                                 ShaderProgram *shaderProgram) {
 
-  uint modelsIndex =
-      glGetUniformBlockIndex(shaderProgram->id, SHADER_BUFFER_TEXTURE_NAME);
+  uint texturesIndex =
+      glGetProgramResourceIndex(shaderProgram->id,GL_SHADER_STORAGE_BLOCK, SHADER_BUFFER_TEXTURE_NAME);
 
-  if (modelsIndex != GL_INVALID_INDEX) {
-    glUniformBlockBinding(shaderProgram->id, modelsIndex,
+  if (texturesIndex != GL_INVALID_INDEX) {
+    glShaderStorageBlockBinding(shaderProgram->id, texturesIndex,
                           SHADER_TEXTURE_BINDING);
-    glBindBufferBase(GL_UNIFORM_BUFFER, SHADER_TEXTURE_BINDING,
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SHADER_TEXTURE_BINDING,
                      manager->textureHandleSSBO);
   }
 }
@@ -183,11 +187,14 @@ void bindTextureManagerToShader(TextureManager *manager,
 void flushTextureManager(TextureManager *manager) {
   glBindBuffer(GL_UNIFORM_BUFFER, manager->textureHandleSSBO);
   glBufferData(GL_UNIFORM_BUFFER, sizeof(uint64_t) * manager->numHandles,
-               manager->handles, GL_STATIC_DRAW);
+               manager->handles,
+               GL_STATIC_DRAW); // TODO makethis less error-prone
 }
 
 void freeTextureManager(TextureManager *manager) {
   glDeleteBuffers(1, &manager->textureHandleSSBO);
+  for (int i = 0 ; i < manager->numHandles; i++)
+    glMakeTextureHandleNonResidentARB(manager->handles[i]);
   free(manager->handles);
 }
 

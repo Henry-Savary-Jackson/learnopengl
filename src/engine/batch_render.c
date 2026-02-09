@@ -152,8 +152,6 @@ void initBatchRenderer(BatchRenderer *renderer, uint maxVertices,
   renderer->vertexBuffer = malloc(sizeof(Vertex) * maxVertices);
   renderer->elementsBuffer = malloc(sizeof(uint) * maxVertices);
 
-  initTextureManager(&renderer->textureManager, MAX_TEXTURES);
-
   renderer->renderingData =
       malloc(sizeof(RenderingData) * renderer->maxShaders);
   renderer->meshes = malloc(sizeof(MeshInfo **) * maxModels);
@@ -181,7 +179,6 @@ void initRenderData(BatchRenderer *renderer, ShaderProgram *shaderProgram) {
       .meshIds = malloc(sizeof(uint) * renderer->maxModels),
       .textureIndices = malloc(sizeof(uint *) * renderer->maxModels),
   };
-  bindTextureManagerToShader(&renderer->textureManager, shaderProgram);
 
   renderer->numShaders++;
 }
@@ -325,7 +322,7 @@ void sendDataToGPU(BatchRenderer *renderer) {
 
 uint copyObjectToRenderingData(BatchRenderer *renderer,
                                RenderingData *renderingData, MeshInfo *meshInfo,
-                               GameObject *object) {
+                               GameObject *object, uint textureIndex) {
   uint meshIndex = 0;
   for (; meshIndex < renderingData->numDrawCommands; meshIndex++)
     if (renderingData->meshIds[meshIndex] == object->mesh->id)
@@ -374,10 +371,8 @@ uint copyObjectToRenderingData(BatchRenderer *renderer,
   renderingData->materialIndices[meshIndex][offset] = object->material->id;
 
   // INDEX 0 is always some default texture
-  uint texIndex = addObjectTexture(&renderer->textureManager, object);
-  // uint texIndex = 0;
   renderingData->textureIndices[meshIndex][offset] =
-      texIndex >= 0 ? texIndex : 0;
+      textureIndex >= 0 ? textureIndex : 0;
 
   renderingData->numModels[meshIndex]++;
 
@@ -421,7 +416,7 @@ uint addMeshesToRenderer(BatchRenderer *renderer, GameObject *object,
   return BATCH_RENDER_OK;
 }
 
-uint copyObjectToBuffer(BatchRenderer *renderer, GameObject *object) {
+uint copyObjectToBuffer(BatchRenderer *renderer, GameObject *object, uint textureIndex) {
 
   if (renderer->maxModels <= renderer->numModels)
     return BATCH_RENDER_NO_SPACE;
@@ -455,9 +450,11 @@ uint copyObjectToBuffer(BatchRenderer *renderer, GameObject *object) {
     initRenderData(renderer, object->shaderProgram);
   }
 
+  uint texIndex = object->numTextures >0 ? glGetTextureSamplerHandleARB(object->textures->glID, object->sampler->glID): 0;
+
   uint result =
       copyObjectToRenderingData(renderer, renderer->renderingData + shaderIndex,
-                                renderer->meshes + meshIndex, object);
+                                renderer->meshes + meshIndex, object, textureIndex);
   renderer->numModels++;
   return result;
 }
@@ -480,8 +477,6 @@ void flush(BatchRenderer *renderer) {
       !renderer->numDrawCommands || !renderer->numShaders)
     return;
 
-
-  flushTextureManager(&renderer->textureManager);
   sendDataToGPU(renderer);
 
   draw(renderer);
@@ -494,10 +489,10 @@ void flush(BatchRenderer *renderer) {
   renderer->numDrawCommands = 0;
 }
 
-void renderObjectBatch(BatchRenderer *renderer, GameObject *object) {
+void renderObjectBatch(BatchRenderer *renderer, GameObject *object, uint textureIndex) {
   int retCode = BATCH_RENDER_NO_SPACE;
   uint iters = 0;
-  while (((retCode = copyObjectToBuffer(renderer, object)) ==
+  while (((retCode = copyObjectToBuffer(renderer, object, textureIndex)) ==
           BATCH_RENDER_NO_SPACE) &&
          iters < 20) {
     flush(renderer);

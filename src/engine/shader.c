@@ -12,6 +12,16 @@ void initShaderProgram(ShaderProgram* shaderProg) {
   shaderProg->shaders = NULL;
 }
 
+
+void initShaderProgramFromFiles(ShaderProgram* shaderProgram, const char * vsPath, const char * fsPath){
+  initShaderProgram(shaderProgram);
+  Shader vsShader = {.type = GL_VERTEX_SHADER};
+  initShaderFromFile(&vsShader, vsPath);
+  Shader fsShader = {.type = GL_FRAGMENT_SHADER};
+  initShaderFromFile(&fsShader, fsPath);
+  attachShadersToProgram(shaderProgram, (Shader[2]){vsShader, fsShader}, 2);
+}
+
 void initShaderFromFile(Shader* shader,const char *path) {
   FILE *fd = fopen(path, "r");
 
@@ -51,6 +61,8 @@ void initShaderFromFile(Shader* shader,const char *path) {
   assert(result);
 }
 
+
+
 void attachShadersToProgram(ShaderProgram* program, Shader shaders[], int length) {
   program->shaders = shaders;
   program->num_shaders=length;
@@ -83,6 +95,6 @@ void freeShader(Shader* shader){
 void freeShaderProgram(ShaderProgram* shaderProg){
   glDeleteProgram(shaderProg->id);
   for (int i =0; i<shaderProg->num_shaders; i++) {
-    freeShader(shaderProg->shaders + i);
+    // freeShader(shaderProg->shaders + i);
   }
 }

@@ -9,10 +9,11 @@ typedef struct {
     ProjectionManager projectionManager;
     LightInfoManager lightManager;
     MaterialManager materialManager;
+    TextureManager textureManager;
     Camera* camera;
 } RenderingContext ;
 // add framebuffers to render to file/ screen/ sockets, etc...
-void initRenderingContext(RenderingContext* context, Camera* camera, uint maxLights);
+void initRenderingContext(RenderingContext* context, Camera* camera, uint maxLights, uint maxMaterials, uint maxTextures);
 void updateContext(RenderingContext* context);
 void addLightToContext(RenderingContext* context, LightSource* light);
 void attachContextToShader(RenderingContext* context, ShaderProgram* shaderProgram);

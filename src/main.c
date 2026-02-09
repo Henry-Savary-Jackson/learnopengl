@@ -1,23 +1,23 @@
+#include <glad/glad.h>
+#include <learnopengl/engine/skybox.h>
+#include <GLFW/glfw3.h>
+#include <cglm/cam.h>
+#include <cglm/mat4.h>
 #include <cglm/vec3.h>
-#include <learnopengl/engine/scene.h>
-#include <learnopengl/utils/arraylist.h>
-#include <learnopengl/engine/loading/model_loader.h>
+#include <learnopengl/config.h>
 #include <learnopengl/engine/batch_render.h>
 #include <learnopengl/engine/camera.h>
 #include <learnopengl/engine/global_info.h>
-#include <learnopengl/config.h>
+#include <learnopengl/engine/loading/model_loader.h>
 #include <learnopengl/engine/mesh.h>
 #include <learnopengl/engine/object.h>
+#include <learnopengl/engine/scene.h>
 #include <learnopengl/engine/shader.h>
 #include <learnopengl/engine/textures.h>
+#include <learnopengl/utils/arraylist.h>
 #include <learnopengl/utils/utils.h>
-#include <glad/glad.h>
-#include <GL/gl.h>
-#include <GLFW/glfw3.h>
-#include <cglm/affine-post.h>
-#include <cglm/cam.h>
-#include <cglm/mat4.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,7 +29,7 @@
 #include <learnopengl/utils/debug.h>
 
 void enableDebugOutput();
-const char * title_base = "Time per frame: , Frame rate: ";
+const char *title_base = "Time per frame: , Frame rate: ";
 
 Camera *currentCam = NULL;
 vec3s camera_pos = {0, 0, 0};
@@ -134,43 +134,39 @@ int main() {
   glfwSetCursorPosCallback(window, mouse_callback);
 
   ShaderProgram shaderProgram;
-  initShaderProgram(&shaderProgram);
-  Shader vertexShader = {.type = GL_VERTEX_SHADER};
-  Shader fragmentShader = {.type = GL_FRAGMENT_SHADER};
-  initShaderFromFile(&vertexShader, "./shaders/vertex_batched_with_lights.glsl");
-  initShaderFromFile(&fragmentShader, "./shaders/fragment_lights.glsl");
-  Shader shaders[] = {vertexShader, fragmentShader};
-  attachShadersToProgram(&shaderProgram, shaders, 2);
+  initShaderProgramFromFiles(&shaderProgram, "./shaders/vertex_batched_with_lights.glsl", "./shaders/fragment_lights.glsl");
 
   ShaderProgram lightShaderProgram;
-  initShaderProgram(&lightShaderProgram);
-  Shader vertexShaderLight = {.type = GL_VERTEX_SHADER};
-  Shader fragmentShaderLight = {.type = GL_FRAGMENT_SHADER};
-  initShaderFromFile(&vertexShaderLight, "./shaders/vertex_batched_for_lights.glsl");
-  initShaderFromFile(&fragmentShaderLight,
-                     "./shaders/light_source_fragment.glsl");
-  Shader shaderLight[] = {vertexShaderLight, fragmentShaderLight};
+  initShaderProgramFromFiles(&lightShaderProgram, "./shaders/vertex_batched_for_lights.glsl",  "./shaders/light_source_fragment.glsl");
 
-  attachShadersToProgram(&lightShaderProgram, shaderLight, 2);
+  ShaderProgram skyboxShader;
+  initShaderProgramFromFiles(&skyboxShader, "./shaders/vertex_skybox.glsl",  "./shaders/fragment_skybox.glsl");
 
   Texture texture;
-  initTexture(&texture, "container", "./textures/container.jpg");
+  initTexture(&texture, "container");
+  loadTexture2D(&texture, "./textures/container.jpg");
 
-  Texture textures[] = {texture};
-  Material material ;
-  initMaterial(&material, (vec3s){1,1,0}, 4, 1, 1);
+  Texture skyBoxTexture;
+  const char *faces[6] = {"right.jpg",  "left.jpg",  "top.jpg",
+                          "bottom.jpg", "front.jpg", "back.jpg"};
+
+  initTexture(&skyBoxTexture, "skybox");
+  loadTextureCubeMap(&skyBoxTexture, "./textures/skybox", faces);
+
+  Skybox skybox;
+  initSkybox(&skybox, &skyboxShader);
+
+
+  Material material;
+  initMaterial(&material, (vec3s){1, 1, 0}, 4, 1, 1);
 
   Sampler sampler;
   initSampler(&sampler);
-  setSamplerParameter(&sampler, GL_TEXTURE_WRAP_S , GL_REPEAT);
-  setSamplerParameter(&sampler, GL_TEXTURE_WRAP_T , GL_REPEAT);
-  setSamplerParameter(&sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+  setSamplerParameter(&sampler, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  setSamplerParameter(&sampler, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  setSamplerParameter(&sampler, GL_TEXTURE_MIN_FILTER,
+                      GL_NEAREST_MIPMAP_LINEAR);
   setSamplerParameter(&sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-  //                 GL_NEAREST_MIPMAP_LINEAR);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-
 
   // put vertices together
 
@@ -178,10 +174,10 @@ int main() {
   loadModelFromFile("models/cube.obj", &meshCube);
 
   uint numLights = 15;
-  float bound =20;
+  float bound = 20;
 
-  uint maxObjectsLight = numLights+ 1000;
-  uint maxObjects = 5000 ;
+  uint maxObjectsLight = numLights + 1000;
+  uint maxObjects = 5000;
 
   Camera camera;
 
@@ -189,26 +185,28 @@ int main() {
   initCamera(&camera, camera_pos, 90, WIDTH, HEIGHT);
 
   Scene scene;
-  initScene(&scene, &camera ,20, maxObjects, maxObjectsLight);
+  initScene(&scene, &camera, 20, maxObjects, maxObjectsLight);
 
-  LightSource lights [numLights];
-  for (int i = 0 ; i < numLights ; i++){
-      lights[i].colour = (vec3s){rand_float(0, 1), rand_float(0, 1), rand_float(0, 1)};
-      lights[i].power = rand_float(500, 700);
-      initGameObject(&lights[i].object);
-      setMeshGameObject(&lights[i].object, &meshCube);
-      setMaterialGameObject(&lights[i].object, &material);
-      lights[i].object.position = (vec3s){rand_float(-bound, bound), rand_float(-bound, bound), rand_float(-bound, bound)};
-      setShaderProgramGameObject(&lights[i].object, &lightShaderProgram);
-      addLightToScene(&scene, &lights[i], DYNAMIC_OBJ);
-      setSampler(&lights[i].object, &sampler);
+  LightSource lights[numLights];
+  for (int i = 0; i < numLights; i++) {
+    lights[i].colour =
+        (vec3s){rand_float(0, 1), rand_float(0, 1), rand_float(0, 1)};
+    lights[i].power = rand_float(500, 700);
+    initGameObject(&lights[i].object);
+    setMeshGameObject(&lights[i].object, &meshCube);
+    setMaterialGameObject(&lights[i].object, &material);
+    lights[i].object.position =
+        (vec3s){rand_float(-bound, bound), rand_float(-bound, bound),
+                rand_float(-bound, bound)};
+    setShaderProgramGameObject(&lights[i].object, &lightShaderProgram);
+    addLightToScene(&scene, &lights[i], DYNAMIC_OBJ);
+    setSampler(&lights[i].object, &sampler);
   }
 
-
-  Mesh bullMesh ;
+  Mesh bullMesh;
   loadModelFromFile("models/bull.obj", &bullMesh);
 
-  Mesh dragonMesh ;
+  Mesh dragonMesh;
   loadModelFromFile("models/bunny.obj", &dragonMesh);
 
   srand(10);
@@ -216,10 +214,10 @@ int main() {
   GameObject *objects = malloc(numObjects * sizeof(GameObject));
   for (int i = 0; i < numObjects; i++) {
     initGameObject(&objects[i]);
-    scaleGameObjectFloat(&objects[i], i %2?  0.01: 10 );
-    setMeshGameObject(&objects[i], i % 2 ?&bullMesh: &dragonMesh);
+    scaleGameObjectFloat(&objects[i], i % 2 ? 0.01 : 10);
+    setMeshGameObject(&objects[i], i % 2 ? &bullMesh : &dragonMesh);
     setShaderProgramGameObject(&objects[i], &shaderProgram);
-    setTexturesGameObject(objects + i, textures, 1);
+    setTexturesGameObject(objects + i, &texture, 1);
     setMaterialGameObject(&objects[i], &material);
 
     vec3s rotation_cube = {
@@ -234,12 +232,22 @@ int main() {
     rotateGameObject(&objects[i], rotation_cube.raw);
     translateGameObject(&objects[i], translate_cube.raw);
 
-    setSampler(&objects[i], &sampler );
+    setSampler(&objects[i], &sampler);
 
     addObjectToScene(&scene, &objects[i], DYNAMIC_OBJ);
   }
   objects[0].position = (vec3s){0, 0, -2};
   objects[0].rotation = (vec3s){0, 30, 0};
+
+  Sampler sampler2;
+  initSampler(&sampler2);
+  setSamplerParameter(&sampler2, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  setSamplerParameter(&sampler2, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  setSamplerParameter(&sampler2, GL_TEXTURE_MIN_FILTER,
+                      GL_NEAREST_MIPMAP_LINEAR);
+  setSamplerParameter(&sampler2, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  setSkybox(&scene, &skybox, &skyBoxTexture, &sampler2);
   // Renderer newRender;
 
   glEnable(GL_DEPTH_TEST);
@@ -263,15 +271,14 @@ int main() {
     // -- GAME LOGIC --
 
     for (int i = 0; i < numObjects; i++) {
-      glm_vec3_add(objects[i].rotation.raw, (vec3){1*dt,1*dt,0.4*dt}, objects[i].rotation.raw);
+      glm_vec3_add(objects[i].rotation.raw, (vec3){1 * dt, 1 * dt, 0.4 * dt},
+                   objects[i].rotation.raw);
     }
 
-
-    for (int i = 0 ; i < numLights; i ++){
-      rotateGameObjectAround(&(lights[i].object), 1.f * dt,
-                           (vec3){0, 2, 1}, (vec3){4, 2, 3});
+    for (int i = 0; i < numLights; i++) {
+      rotateGameObjectAround(&(lights[i].object), 1.f * dt, (vec3){0, 2, 1},
+                             (vec3){4, 2, 3});
     }
-
 
     // -- CALL TO RENDER --
     renderLoop(&scene);
@@ -284,11 +291,10 @@ int main() {
     dt = getDetlaTime();
     lastTime = glfwGetTime();
 
-
     if (lastTime - lastFrameUpdate > 0.1) {
       lastFrameUpdate = lastTime;
       float frameTime = (lastTime - startTime);
-      char frameTimeStr[ strlen(title_base)+ 15];
+      char frameTimeStr[strlen(title_base) + 15];
       sprintf(frameTimeStr, "Time per frame: %.5f , Frame rate: %d", frameTime,
               (int)(1 / frameTime));
       glfwSetWindowTitle(window, frameTimeStr);
@@ -297,7 +303,6 @@ int main() {
   }
 
   freeScene(&scene);
-
   free(objects);
   freeTexture(&texture);
   freeShaderProgram(&shaderProgram);

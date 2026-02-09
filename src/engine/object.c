@@ -3,7 +3,6 @@
 #include <learnopengl/engine/object.h>
 #include <cglm/mat4.h>
 #include <cglm/vec4.h>
-#include <locale.h>
 #include <string.h>
 
 

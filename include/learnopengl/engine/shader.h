@@ -14,7 +14,8 @@ typedef struct{
 } ShaderProgram;
 
 
-void initShaderProgram(ShaderProgram*shaderProg) ; 
+void initShaderProgram(ShaderProgram*shaderProg) ;
+void initShaderProgramFromFiles(ShaderProgram* shaderProgram, const char * vsPath, const char * fsPath);
 
 void initShaderFromFile(Shader* shader,const char *path) ;
 

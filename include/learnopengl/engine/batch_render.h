@@ -79,7 +79,6 @@ typedef struct {
 
   MeshInfo* meshes;
 
-
   Vertex *vertexBuffer;
   uint *elementsBuffer;
   RenderingData* renderingData;
@@ -89,7 +88,6 @@ typedef struct {
   MaterialData*materialsBuffer;
   uint* textureIndicesBuffer;
 
-  TextureManager textureManager;
 
   // whenver you draw do it for each draw call
   // whenever you send data, youconcatenate draw calls into the main buffers;
@@ -117,7 +115,7 @@ void flush(BatchRenderer *renderer) ;
 
 /*Send data to client-side buffers, automatically
 flushing when limits are exceeded*/
-void renderObjectBatch(BatchRenderer *renderer, GameObject *object) ;
+void renderObjectBatch(BatchRenderer *renderer, GameObject *object , uint textureIndex) ;
 
 /*Free all buffers and resources the renderer holds.*/
 void freeBatchRenderer(BatchRenderer *renderer);
@@ -140,7 +138,7 @@ void sendTransformationsToGPU(BatchRenderer* renderer);
 Use this to only copy an objectś data to the relevant buffers
 If adding this exceeds capacity , CAPACITY_EXCEEDED will be returned.
 */
-uint copyObjectToBuffer(BatchRenderer* renderer, GameObject* object);
+uint copyObjectToBuffer(BatchRenderer* renderer, GameObject* object, uint textureIndex);
 
 /*
 Use this to only copy an objectś transfomration matrix to the client-side buffer.
