@@ -5,6 +5,7 @@ layout (bindless_sampler) uniform;
 in vec2 texPos;
 in vec3 normalCamera;
 in vec3 fragPosCamera;
+in vec3 fragPos;
 flat in uint materialIndex;
 flat in uint  textureIndexFrag;
 
@@ -36,6 +37,14 @@ layout (std430) readonly buffer  Textures{
    uvec2 textures[100];
 } ;
 
+layout(std140) uniform ViewProjection{
+    mat4 view;
+    mat4 projection;
+    mat4 projectionTimesView;
+    vec3 cameraPos;
+    vec3 cameraDirection
+};
+
 // get the contribution of one point light to the pixel
 vec3 getColourLight( inout LightSource light, inout Material material){
 
@@ -64,7 +73,7 @@ vec3 getColourLight( inout LightSource light, inout Material material){
     float spec =  clamp(dot(reflect(lightDir,norm), normalize(fragPosCamera)  ),0,1) ;
     vec3 specular = pow(spec,128) * lightColour * specularCoeff;;
 
-    vec3 colour =  (ambient+diffuse +specular)*materialColour*intensity ;
+    vec3 colour =  ambient + (diffuse +specular)*materialColour*intensity ;
     return colour;
 }
 
@@ -72,9 +81,12 @@ void main()
 {
     vec3 colour = vec3(0,0,0);
     Material material = materials[materialIndex];
-    for (int i = 0 ; i < numLights.x; i ++){
-        colour += getColourLight(lightData[i], material );
-    }
+    // for (int i = 0 ; i < numLights.x; i ++){
+    //     colour += getColourLight(lightData[i], material );
+    // }
+    float ratio = 1/1.52;
+    vec3 I = normalize(fragPos - cameraPos);
+    vec3 R = reflect(I, normalize(normalCamera));
     FragColor = texture(sampler2D(textures[textureIndexFrag]), texPos) *  vec4(colour,1) ;
 
 }

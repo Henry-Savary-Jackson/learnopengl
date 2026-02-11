@@ -11,7 +11,10 @@ layout(std140) uniform ViewProjection{
     mat4 view;
     mat4 projection;
     mat4 projectionTimesView;
+    vec3 cameraPos;
+    vec3 cameraDirection;
 };
+
 struct LightSource
 {
     vec4 positionCamera;

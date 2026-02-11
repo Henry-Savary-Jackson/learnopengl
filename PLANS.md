@@ -3,6 +3,8 @@
 - [x]  Implement architecture for Batch rendering+GPU instancing for scenes with static and dynamic objects
 with different textures, shaders and meshes as well as multiple lights
 
+- [x] add skyboxes
+
 - Implement a way to add post-processing effects 
     - Blur
     - Bloom

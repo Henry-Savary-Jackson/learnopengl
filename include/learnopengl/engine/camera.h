@@ -14,10 +14,12 @@ typedef struct{
     vec3s direction;
 } Camera ;
 
-typedef struct {
+typedef  struct  {
     mat4 viewMatrix;
     mat4 projectionMatrix;
     mat4 projectionTimesView;
+    vec3s cameraPos;
+    alignas(16) vec3s cameraDirection ;
 } ProjectionInfo;
 
 void initCamera( Camera * camera, vec3s position, float fov, uint width, uint height);

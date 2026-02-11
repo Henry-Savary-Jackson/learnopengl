@@ -21,7 +21,7 @@ texture->depth =1;
   stbi_set_flip_vertically_on_load(true);
   int nrChannels;
   unsigned char *data =
-      stbi_load(path, &(texture->width), &(texture->height), &nrChannels, 0);
+      stbi_load(path, (int*)&(texture->width), (int*)&(texture->height), &nrChannels, 0);
   if (data) {
     glTextureStorage2D(texture->glID, 1, nrChannels == 4 ? GL_RGBA8 : GL_RGB8,
                        texture->width, texture->height);

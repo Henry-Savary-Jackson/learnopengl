@@ -156,9 +156,8 @@ int main() {
   Skybox skybox;
   initSkybox(&skybox, &skyboxShader);
 
-
   Material material;
-  initMaterial(&material, (vec3s){1, 1, 0}, 4, 1, 1);
+  initMaterial(&material, (vec3s){1, 1, 0}, 0.02, 100, 100);
 
   Sampler sampler;
   initSampler(&sampler);
@@ -191,7 +190,7 @@ int main() {
   for (int i = 0; i < numLights; i++) {
     lights[i].colour =
         (vec3s){rand_float(0, 1), rand_float(0, 1), rand_float(0, 1)};
-    lights[i].power = rand_float(500, 700);
+    lights[i].power = rand_float(5000, 7000);
     initGameObject(&lights[i].object);
     setMeshGameObject(&lights[i].object, &meshCube);
     setMaterialGameObject(&lights[i].object, &material);
@@ -239,19 +238,12 @@ int main() {
   objects[0].position = (vec3s){0, 0, -2};
   objects[0].rotation = (vec3s){0, 30, 0};
 
-  Sampler sampler2;
-  initSampler(&sampler2);
-  setSamplerParameter(&sampler2, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  setSamplerParameter(&sampler2, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  setSamplerParameter(&sampler2, GL_TEXTURE_MIN_FILTER,
-                      GL_NEAREST_MIPMAP_LINEAR);
-  setSamplerParameter(&sampler2, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-  setSkybox(&scene, &skybox, &skyBoxTexture, &sampler2);
+  setSkybox(&scene, &skybox, &skyBoxTexture, &sampler);
   // Renderer newRender;
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
+  glDepthFunc(GL_LEQUAL);
   glCullFace(GL_BACK);
   glfwSwapInterval(0);
 

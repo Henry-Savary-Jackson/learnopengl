@@ -108,6 +108,8 @@ void setProjectionMatrixManager(ProjectionManager *manager, Camera *camera) {
   glm_mat4_mul(manager->projectionBuffer->projectionMatrix,
                manager->projectionBuffer->viewMatrix,
                manager->projectionBuffer->projectionTimesView);
+  manager->projectionBuffer->cameraPos = camera->position;
+  manager->projectionBuffer->cameraDirection = camera->direction;
 }
 
 void bindProjectionManagerShader(ProjectionManager *manager,
@@ -139,7 +141,7 @@ void freeProjectionManager(ProjectionManager *manager) {
 void initTextureManager(TextureManager *manager, uint maxTextures) {
   glGenBuffers(1, &(manager->textureHandleSSBO));
   manager->numHandles = 0;
-  manager->handles = malloc(sizeof(int64_t) * maxTextures);
+  manager->handles = malloc(sizeof(int64_t)*2 * maxTextures);
   manager->maxTextures = maxTextures;
 }
 
@@ -155,14 +157,14 @@ uint addTexture(TextureManager *manager, Texture *texture, Sampler *sampler) {
   uint64_t handle = glGetTextureSamplerHandleARB(texture->glID, sampler->glID);
   uint index = 0;
   for (; index < manager->numHandles; index++)
-    if (handle == manager->handles[index])
+    if (handle == manager->handles[index<<1])
       break;
 
   if (index >= manager->maxTextures)
     return TEXTURE_UNDEFINED_INDEX;
 
   if (index == manager->numHandles) {
-    manager->handles[index] = handle;
+    manager->handles[index<<1] = handle;
     manager->numHandles++;
     glMakeTextureHandleResidentARB(handle);
   }
@@ -174,10 +176,10 @@ void bindTextureManagerToShader(TextureManager *manager,
                                 ShaderProgram *shaderProgram) {
 
   uint texturesIndex =
-      glGetProgramResourceIndex(shaderProgram->id,GL_SHADER_STORAGE_BLOCK, SHADER_BUFFER_TEXTURE_NAME);
+      glGetProgramResourceIndex(shaderProgram->id,GL_UNIFORM_BUFFER, SHADER_BUFFER_TEXTURE_NAME);
 
   if (texturesIndex != GL_INVALID_INDEX) {
-    glShaderStorageBlockBinding(shaderProgram->id, texturesIndex,
+    glUniformBlockBinding(shaderProgram->id, texturesIndex,
                           SHADER_TEXTURE_BINDING);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SHADER_TEXTURE_BINDING,
                      manager->textureHandleSSBO);
@@ -186,9 +188,9 @@ void bindTextureManagerToShader(TextureManager *manager,
 
 void flushTextureManager(TextureManager *manager) {
   glBindBuffer(GL_UNIFORM_BUFFER, manager->textureHandleSSBO);
-  glBufferData(GL_UNIFORM_BUFFER, sizeof(uint64_t) * manager->numHandles,
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(uint64_t)*2 * manager->numHandles,
                manager->handles,
-               GL_STATIC_DRAW); // TODO makethis less error-prone
+               GL_STATIC_DRAW);
 }
 
 void freeTextureManager(TextureManager *manager) {
