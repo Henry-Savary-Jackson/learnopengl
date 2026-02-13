@@ -42,7 +42,7 @@ layout(std140) uniform ViewProjection{
     mat4 projection;
     mat4 projectionTimesView;
     vec3 cameraPos;
-    vec3 cameraDirection
+    vec3 cameraDirection;
 };
 
 // get the contribution of one point light to the pixel

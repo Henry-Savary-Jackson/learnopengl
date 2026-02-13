@@ -65,7 +65,7 @@ void initSkybox(Skybox* skybox, ShaderProgram* shaderProgram){
 
 void setSkyboxTextureIndex(Skybox* skybox, uint textureIndex){
     skybox->textureIndex = textureIndex;
-    uint location  = glGetProgramResourceLocation(skybox->shaderProgram->id, GL_UNIFORM, "textureIndex");
+    uint location  = glad_glGetUniformLocation(skybox->shaderProgram->id,  "textureIndex");
     if (location!= -1){
         glProgramUniform1ui(skybox->shaderProgram->id, location, textureIndex );
     }

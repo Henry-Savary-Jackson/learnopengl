@@ -176,7 +176,7 @@ void bindTextureManagerToShader(TextureManager *manager,
                                 ShaderProgram *shaderProgram) {
 
   uint texturesIndex =
-      glGetProgramResourceIndex(shaderProgram->id,GL_UNIFORM_BUFFER, SHADER_BUFFER_TEXTURE_NAME);
+      glGetUniformBlockIndex(shaderProgram->id, SHADER_BUFFER_TEXTURE_NAME);
 
   if (texturesIndex != GL_INVALID_INDEX) {
     glUniformBlockBinding(shaderProgram->id, texturesIndex,
