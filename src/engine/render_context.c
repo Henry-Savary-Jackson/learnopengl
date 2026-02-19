@@ -24,7 +24,7 @@ void addLightToContext(RenderingContext* context, LightSource* light ){
     addLightToManager(&context->lightManager, light, view);
 }
 void addObjectToContext(RenderingContext *context, GameObject *object){
-    addMaterialToManager(&context->materialManager, object->material);
+    addMaterialToManager(&context->materialManager, object->material, &context->textureManager);
 }
 
 void attachContextToShader(RenderingContext* context, ShaderProgram* shaderProgram){

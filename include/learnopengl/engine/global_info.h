@@ -73,7 +73,7 @@ void flushProjectionMatrixManager(ProjectionManager *manager);
 void freeProjectionManager(ProjectionManager *manager);
 
 void initMaterialManager(MaterialManager *manager, uint maxMaterials);
-void addMaterialToManager(MaterialManager *manager, Material *material) ;
+void addMaterialToManager(MaterialManager *manager, Material *material, TextureManager* textureManager) ;
 void bindMaterialManagerShader(MaterialManager *manager,
                                ShaderProgram *shaderProgram);
 void flushMaterialManager(MaterialManager *manager);
@@ -86,3 +86,5 @@ void bindTextureManagerToShader(TextureManager *manager,
                                 ShaderProgram *shaderProgram);
 void flushTextureManager(TextureManager *manager);
 void freeTextureManager(TextureManager *manager);
+
+void setMaterialData(MaterialData* materialData, Material * material, TextureManager* textureManager );

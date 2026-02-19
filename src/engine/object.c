@@ -1,3 +1,4 @@
+#include "learnopengl/engine/global_info.h"
 #include <cglm/affine.h>
 #include <cglm/vec3.h>
 #include <learnopengl/engine/object.h>
@@ -74,11 +75,54 @@ void setMaterialGameObject(GameObject* object, Material* material){
 
 static uint NUM_MATERIALS = 0;
 
-void initMaterial(Material *material, vec3s colour, float ambient, float diffuse, float specular){
+void initMaterial(Material* material){
     material->id = NUM_MATERIALS;
     NUM_MATERIALS++;
-    material->material.colour = colour;
-    material->material.ambientCoeffient = ambient;
-    material->material.diffuseCoeffient = diffuse;
-    material->material.specularCoefficient = specular;
+    material->colour = (vec3s){1,1,1};
+    material->ambientCoeffient = 1;
+    material->diffuseCoeffient = 1;
+    material->specularCoefficient = 1;
+    material->reflectionIndex = 0;
+    material->refractionIndex = 0;
+    material->specularMap = NULL;
+    material->normalMap = NULL;
+}
+
+void setMaterialColour(Material* material, vec3s colour){
+    material->colour = colour;
+}
+void setAmbientCoeffificent(Material* material, float ambient  ){
+    material->ambientCoeffient = ambient;
+}
+void setDiffuseCoeffificent(Material* material, float diffuse ){
+    material->diffuseCoeffient = diffuse;
+}
+void setSpecularCoeffificent(Material* material, float specular ){
+    material->specularCoefficient = specular;
+}
+void setReflectionCoeffificent(Material* material, float reflection  ){
+    material->reflectionIndex = reflection;
+}
+void setRefractionIndex(Material* material, float refractionIndex ){
+    material->refractionIndex = refractionIndex;
+}
+void setNormalMap(Material* material, Texture* normalMap , Sampler* sampler){
+    material->normalMap = normalMap;
+    material->normalSampler = sampler;
+}
+void setSpecularMap(Material* material, Texture* specularMap , Sampler* sampler){
+    material->specularMap = specularMap;
+    material->specularSampler = sampler;
+}
+
+void setMaterialData(MaterialData* materialData, Material * material, TextureManager* textureManager ){
+
+    materialData->ambientCoeffient = material->ambientCoeffient;
+    materialData->diffuseCoeffient = material->diffuseCoeffient;
+    materialData->specularCoefficient = material->specularCoefficient;
+    materialData->reflectionIndex = material->reflectionIndex;
+    materialData->refractionIndex = material->refractionIndex;
+    materialData->colour = material->colour;
+    materialData->specularMap = !material->specularMap ? -1  : addTexture(textureManager, material->normalMap, material->normalSampler) ;
+    materialData->normalMap = !material->normalMap ? -1  : addTexture(textureManager, material->specularMap, material->specularSampler) ;
 }

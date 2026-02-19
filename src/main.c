@@ -157,7 +157,11 @@ int main() {
   initSkybox(&skybox, &skyboxShader);
 
   Material material;
-  initMaterial(&material, (vec3s){1, 1, 0}, 0.02, 100, 100);
+  initMaterial(&material);
+  setMaterialColour(&material, (vec3s){1, 1, 0});
+  setAmbientCoeffificent(&material, 0.02);
+  setDiffuseCoeffificent(&material, 100);
+  setSpecularCoeffificent(&material, 100);
 
   Sampler sampler;
   initSampler(&sampler);

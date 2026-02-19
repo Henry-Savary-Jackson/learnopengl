@@ -27,17 +27,13 @@ static const char *UNIFORM_MATERIAL_NAME = "Materials";
 static const char *SHADER_BUFFER_MODELS_NAME = "ModelTransforms";
 static const char *SHADER_BUFFER_INV_MODELS_NAME = "InverseModelTransforms";
 static const char *SHADER_BUFFER_TEXTURE_NAME = "Textures";
+static const char *SKYBOX_UNIFORM_UNIFORM_NAME = "Skybox";
 
 void initLightInfoManager(LightInfoManager *manager, uint maxLights) {
   glGenBuffers(1, &(manager->lightsSSBO));
   manager->maxLights = maxLights;
   manager->lights = malloc(sizeof(vec4) + sizeof(LightData) * maxLights);
   manager->numLights = 0;
-  // glBindBuffer(GL_SHADER_STORAGE_BUFFER, manager->lightsSSBO);
-  // glBufferData(GL_SHADER_STORAGE_BUFFER,
-  //              sizeof(vec4) + sizeof(LightData) * maxLights, NULL,
-  //              GL_DYNAMIC_DRAW);
-  // glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
 void bindLightInfoManager(LightInfoManager *manager,
@@ -176,12 +172,12 @@ void bindTextureManagerToShader(TextureManager *manager,
                                 ShaderProgram *shaderProgram) {
 
   uint texturesIndex =
-      glGetUniformBlockIndex(shaderProgram->id, SHADER_BUFFER_TEXTURE_NAME);
+      glGetUniformBlockIndex(shaderProgram->id ,SHADER_BUFFER_TEXTURE_NAME);
 
   if (texturesIndex != GL_INVALID_INDEX) {
     glUniformBlockBinding(shaderProgram->id, texturesIndex,
                           SHADER_TEXTURE_BINDING);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SHADER_TEXTURE_BINDING,
+    glBindBufferBase(GL_UNIFORM_BUFFER, SHADER_TEXTURE_BINDING,
                      manager->textureHandleSSBO);
   }
 }
@@ -196,7 +192,7 @@ void flushTextureManager(TextureManager *manager) {
 void freeTextureManager(TextureManager *manager) {
   glDeleteBuffers(1, &manager->textureHandleSSBO);
   for (int i = 0 ; i < manager->numHandles; i++)
-    glMakeTextureHandleNonResidentARB(manager->handles[i]);
+    glMakeTextureHandleNonResidentARB(manager->handles[i<<1]);
   free(manager->handles);
 }
 
@@ -209,14 +205,15 @@ void initMaterialManager(MaterialManager *manager, uint maxMaterials) {
   manager->ids = malloc(sizeof(uint) * maxMaterials);
 }
 
-void addMaterialToManager(MaterialManager *manager, Material *material) {
+void addMaterialToManager(MaterialManager *manager, Material *material, TextureManager* textureManager) {
   uint materialIndex = 0;
   for (; materialIndex < manager->numMaterials; materialIndex++)
     if (manager->ids[materialIndex] == material->id)
       break;
 
   if (materialIndex == manager->numMaterials) {
-    manager->materialsBuffer[manager->numMaterials] = material->material;
+    MaterialData data;
+    setMaterialData(manager->materialsBuffer + manager->numMaterials, material,  textureManager);
     manager->ids[manager->numMaterials] = material->id;
     manager->numMaterials++;
   }

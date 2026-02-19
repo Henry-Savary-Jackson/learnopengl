@@ -8,11 +8,26 @@ typedef struct {
     alignas(16) float ambientCoeffient;
     float diffuseCoeffient;
     float specularCoefficient;
+    alignas(16) float reflectionIndex;
+    float refractionIndex;
+    int specularMap;
+    int normalMap;
 } MaterialData;
 
 typedef struct {
     uint id;
-    MaterialData material;
+    vec3s colour;
+    float ambientCoeffient;
+    float diffuseCoeffient;
+    float specularCoefficient;
+    float reflectionIndex;
+    float refractionIndex;
+
+    Texture* specularMap;
+    Sampler* specularSampler;
+
+    Texture* normalMap;
+    Sampler* normalSampler;
 } Material;
 
 
@@ -24,7 +39,7 @@ typedef struct{
     Mesh* mesh;
     ShaderProgram* shaderProgram;
     Texture* textures;
-    Sampler* sampler; // each object with a texture can defin properties
+    Sampler* sampler; // each object with a texture can define properties
     uint numTextures;
     Material* material;
 } GameObject;
@@ -51,4 +66,13 @@ void rotateGameObjectAround(GameObject* object, float angle, vec3 axis , vec3 pi
 void scaleGameObject(GameObject* object, vec3 scale);
 void scaleGameObjectFloat(GameObject* object, float scale);
 
-void initMaterial(Material* material, vec3s colour , float ambient, float diffuse , float specular );
+void initMaterial(Material* material);
+void setMaterialColour(Material* material, vec3s colour);
+void setAmbientCoeffificent(Material* material, float ambient );
+void setDiffuseCoeffificent(Material* material, float diffuse );
+void setSpecularCoeffificent(Material* material, float specular );
+void setReflectionCoeffificent(Material* material, float reflection  );
+void setRefractionIndex(Material* material, float refractionIndex );
+void setSpecularCoeffificent(Material* material, float specular );
+void setNormalMap(Material* material, Texture* normalMap , Sampler* sampler);
+void setSpecularMap(Material* material, Texture* specularMap , Sampler* sampler);

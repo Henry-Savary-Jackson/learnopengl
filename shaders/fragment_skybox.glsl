@@ -7,7 +7,7 @@ uniform uint textureIndex;
 
 out vec4 FragColor;
 
-layout (std430) uniform Textures{
+layout (std140) uniform Textures{
    uvec2 textures[100];
 } ;
 

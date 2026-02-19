@@ -14,7 +14,12 @@ out vec4 FragColor;
 
 struct Material {
     vec4 colour;
-    vec4 coeffs;
+    vec3 coeffs;
+    float reflectionIndex;
+    float refractionIndex;
+    uint specularMapIndex;
+    uint normalMapIndex;
+    uint textureMapIndex;
 };
 
 struct LightSource
@@ -33,7 +38,7 @@ layout (std140) uniform Materials{
     Material materials[100];
 };
 
-layout (std430) readonly buffer  Textures{
+layout (std140) uniform  Textures{
    uvec2 textures[100];
 } ;
 
@@ -63,8 +68,6 @@ vec3 getColourLight( inout LightSource light, inout Material material){
 
     float diffuseCoeff = material.coeffs.y;
     float specularCoeff = material.coeffs.z;
-    // float diffuseCoeff =1;
-    // float specularCoeff =1;
 
     vec3 lightDir = normalize( lightFragDiff );
     vec3 norm = normalize(normalCamera);
@@ -81,12 +84,9 @@ void main()
 {
     vec3 colour = vec3(0,0,0);
     Material material = materials[materialIndex];
-    // for (int i = 0 ; i < numLights.x; i ++){
-    //     colour += getColourLight(lightData[i], material );
-    // }
-    float ratio = 1/1.52;
-    vec3 I = normalize(fragPos - cameraPos);
-    vec3 R = reflect(I, normalize(normalCamera));
+    for (int i = 0 ; i < numLights.x; i ++){
+        colour += getColourLight(lightData[i], material );
+    }
     FragColor = texture(sampler2D(textures[textureIndexFrag]), texPos) *  vec4(colour,1) ;
 
 }
