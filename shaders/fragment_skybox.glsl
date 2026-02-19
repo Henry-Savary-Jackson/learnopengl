@@ -3,7 +3,7 @@
 layout (bindless_sampler) uniform;
 
 in vec3 texPos;
-uniform uint textureIndex;
+uniform uint skyboxCubeMapIndex;
 
 out vec4 FragColor;
 
@@ -13,5 +13,5 @@ layout (std140) uniform Textures{
 
 void main()
 {
-    FragColor = texture(samplerCube(textures[textureIndex]), texPos) ;
+    FragColor = texture(samplerCube(textures[skyboxCubeMapIndex]), texPos) ;
 }

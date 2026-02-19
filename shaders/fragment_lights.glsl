@@ -4,6 +4,7 @@ layout (bindless_sampler) uniform;
 
 in vec2 texPos;
 in vec3 normalCamera;
+in vec3 normal;
 in vec3 fragPosCamera;
 in vec3 fragPos;
 flat in uint materialIndex;
@@ -19,8 +20,9 @@ struct Material {
     float refractionIndex;
     uint specularMapIndex;
     uint normalMapIndex;
-    uint textureMapIndex;
 };
+
+uniform uint skyboxCubeMapIndex;
 
 struct LightSource
 {
@@ -84,9 +86,13 @@ void main()
 {
     vec3 colour = vec3(0,0,0);
     Material material = materials[materialIndex];
-    for (int i = 0 ; i < numLights.x; i ++){
-        colour += getColourLight(lightData[i], material );
-    }
-    FragColor = texture(sampler2D(textures[textureIndexFrag]), texPos) *  vec4(colour,1) ;
+    // for (int i = 0 ; i < numLights.x; i ++){
+    //     colour += getColourLight(lightData[i], material );
+    // }
+    vec3 I = normalize(fragPos - cameraPos);
+    vec3 R = refract(I, normalize(normal), material.refractionIndex);
+    // FragColor = texture(sampler2D(textures[textureIndexFrag]), texPos) ;
+    FragColor = vec4(texture(samplerCube(textures[skyboxCubeMapIndex]), R).rgb, 1);
+    // FragColor *= vec4(colour,1) ;
 
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include "learnopengl/engine/skybox.h"
 #include <cglm/types.h>
 #include <learnopengl/engine/camera.h>
 #include <learnopengl/engine/light.h>

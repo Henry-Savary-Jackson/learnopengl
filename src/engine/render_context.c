@@ -1,6 +1,7 @@
 #include "learnopengl/engine/camera.h"
 #include "learnopengl/engine/global_info.h"
 #include "learnopengl/engine/object.h"
+#include "learnopengl/engine/skybox.h"
 #include <learnopengl/engine/render_context.h>
 
 void initRenderingContext(RenderingContext* context, Camera* camera, uint maxLights, uint maxMaterials, uint maxTextures){
@@ -8,6 +9,7 @@ void initRenderingContext(RenderingContext* context, Camera* camera, uint maxLig
     initProjectionMatrixManager(&context->projectionManager);
     initMaterialManager(&context->materialManager, 100);
     initTextureManager(&context->textureManager, 200);
+    initSkybox(&context->skybox);
     context->camera = camera;
 }
 void updateContext(RenderingContext* context){
@@ -32,7 +34,9 @@ void attachContextToShader(RenderingContext* context, ShaderProgram* shaderProgr
     bindLightInfoManager(&context->lightManager, shaderProgram);
     bindMaterialManagerShader(&context->materialManager, shaderProgram);
     bindTextureManagerToShader(&context->textureManager, shaderProgram);
+    bindSkyboxManagerToShader(&context->skybox, shaderProgram);
 }
+
 void freeRenderingContext(RenderingContext* context){
     freeLightManager(&context->lightManager);
     freeMaterialManager(&context->materialManager);

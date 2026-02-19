@@ -14,6 +14,7 @@ out vec2 texPos ;
 out vec3 normalCamera;
 out vec3 fragPosCamera;
 out vec3 fragPos;
+out vec3 normal;
 flat out uint materialIndex;
 flat out uint textureIndexFrag;
 
@@ -31,9 +32,9 @@ void main()
 
     // invModel is transpose(inverse(model))
     // precomputed for efficiency
-    normalCamera = normalize(  vec3( invModel* vec4(aNormal,1))   );
+    normal = normalize(  vec3( invModel* vec4(aNormal,1))   );
 
-    // normalCamera = normalize( vec3( view * vec4(normalCamera,0)));
+    normalCamera = normalize( vec3( view * vec4(normal,0)));
 
     vec4 modelPos = model * vec4(aPos , 1.0);
     fragPos = vec3(modelPos);

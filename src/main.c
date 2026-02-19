@@ -101,6 +101,9 @@ float rand_float(float min, float max) {
   return min + (max - min) * ((float)random() / (float)RAND_MAX);
 }
 
+static uint framecount = 0;
+float totalTimeSwap = 0;
+
 int main() {
 
   glfwInit();
@@ -153,8 +156,6 @@ int main() {
   initTexture(&skyBoxTexture, "skybox");
   loadTextureCubeMap(&skyBoxTexture, "./textures/skybox", faces);
 
-  Skybox skybox;
-  initSkybox(&skybox, &skyboxShader);
 
   Material material;
   initMaterial(&material);
@@ -162,6 +163,7 @@ int main() {
   setAmbientCoeffificent(&material, 0.02);
   setDiffuseCoeffificent(&material, 100);
   setSpecularCoeffificent(&material, 100);
+  setRefractionIndex(&material, 1/1.52);
 
   Sampler sampler;
   initSampler(&sampler);
@@ -190,6 +192,8 @@ int main() {
   Scene scene;
   initScene(&scene, &camera, 20, maxObjects, maxObjectsLight);
 
+  setSkybox(&scene, &skyBoxTexture, &sampler, &skyboxShader);
+
   LightSource lights[numLights];
   for (int i = 0; i < numLights; i++) {
     lights[i].colour =
@@ -217,8 +221,8 @@ int main() {
   GameObject *objects = malloc(numObjects * sizeof(GameObject));
   for (int i = 0; i < numObjects; i++) {
     initGameObject(&objects[i]);
-    scaleGameObjectFloat(&objects[i], i % 2 ? 0.01 : 10);
-    setMeshGameObject(&objects[i], i % 2 ? &bullMesh : &dragonMesh);
+    scaleGameObjectFloat(&objects[i], i % 2 ? 1 : 10);
+    setMeshGameObject(&objects[i], i % 2 ? &meshCube : &dragonMesh);
     setShaderProgramGameObject(&objects[i], &shaderProgram);
     setTexturesGameObject(objects + i, &texture, 1);
     setMaterialGameObject(&objects[i], &material);
@@ -242,7 +246,6 @@ int main() {
   objects[0].position = (vec3s){0, 0, -2};
   objects[0].rotation = (vec3s){0, 30, 0};
 
-  setSkybox(&scene, &skybox, &skyBoxTexture, &sampler);
   // Renderer newRender;
 
   glEnable(GL_DEPTH_TEST);
@@ -279,7 +282,20 @@ int main() {
     // -- CALL TO RENDER --
     renderLoop(&scene);
 
+    // float start = glfwGetTime();
     glfwSwapBuffers(window);
+
+    // float end = glfwGetTime();
+    // totalTimeSwap += end -start;
+    // framecount ++;
+
+    // if (framecount % 20 == 0){
+
+    //   // printf("swap buffers: %0.9f\n\n", totalTimeSwap /20 );
+    //   totalTimeSwap = 0;
+
+    // }
+
     glfwPollEvents();
     pollInput(window);
 

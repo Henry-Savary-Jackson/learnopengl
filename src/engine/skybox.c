@@ -1,8 +1,11 @@
 #include "learnopengl/engine/shader.h"
+#include <assert.h>
 #include <cglm/types.h>
 #include <learnopengl/engine/skybox.h>
 #include <glad/glad.h>
 #include <stdlib.h>
+
+const static char * SKYBOX_TEXTURE_UNIFORM_NAME= "skyboxCubeMapIndex";
 
 const static float skyboxVertices[] = {
     // positions
@@ -49,8 +52,8 @@ const static float skyboxVertices[] = {
      1.0f, -1.0f,  1.0f
 };
 
-void initSkybox(Skybox* skybox, ShaderProgram* shaderProgram){
-    skybox->shaderProgram = shaderProgram;
+void initSkybox(SkyboxManager* skybox){
+    skybox->shaderProgram = NULL;
     skybox->textureIndex = 0;
     glGenVertexArrays(1, &skybox->vao);
     glGenBuffers(1, &skybox->vertexVbo);
@@ -63,15 +66,24 @@ void initSkybox(Skybox* skybox, ShaderProgram* shaderProgram){
     glEnableVertexAttribArray(0);
 }
 
-void setSkyboxTextureIndex(Skybox* skybox, uint textureIndex){
-    skybox->textureIndex = textureIndex;
-    uint location  = glad_glGetUniformLocation(skybox->shaderProgram->id,  "textureIndex");
+void setSkyboxShader(SkyboxManager* skybox, ShaderProgram* shaderProgram){
+    skybox->shaderProgram = shaderProgram;
+}
+
+void bindSkyboxManagerToShader(SkyboxManager* skybox, ShaderProgram* shaderProgram){
+    uint location  = glGetUniformLocation(skybox->shaderProgram->id,  SKYBOX_TEXTURE_UNIFORM_NAME);
     if (location!= -1){
-        glProgramUniform1ui(skybox->shaderProgram->id, location, textureIndex );
+        glProgramUniform1ui(skybox->shaderProgram->id, location, skybox->textureIndex );
     }
 }
 
-void renderSkybox(Skybox* skybox){
+void setSkyboxTextureIndex(SkyboxManager* skybox, uint textureIndex){
+    skybox->textureIndex = textureIndex;
+    bindSkyboxManagerToShader(skybox, skybox->shaderProgram);
+}
+
+void renderSkybox(SkyboxManager* skybox){
+    assert(skybox->shaderProgram);
     useShaderProgram(skybox->shaderProgram);
     glDepthMask(GL_FALSE);
 

@@ -8,11 +8,15 @@ typedef struct{
     uint textureIndex;
     float* vertexData;
     ShaderProgram* shaderProgram;
-}Skybox;
+}SkyboxManager;
 
 
-void initSkybox(Skybox* skybox, ShaderProgram* shaderProgram);
+void initSkybox(SkyboxManager* skybox);
 
-void setSkyboxTextureIndex(Skybox *skybox, uint textureIndex);
+void setSkyboxTextureIndex(SkyboxManager *skybox, uint textureIndex);
 
-void renderSkybox(Skybox* skybox);
+void renderSkybox(SkyboxManager* skybox);
+
+void setSkyboxShader(SkyboxManager* skybox, ShaderProgram* shaderProgram);
+
+void bindSkyboxManagerToShader(SkyboxManager* skybox, ShaderProgram* shaderProgram);

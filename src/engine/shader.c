@@ -4,7 +4,6 @@
 #include "stdlib.h"
 #include <learnopengl/engine/shader.h>
 #include <glad/glad.h>
-#include <GL/gl.h>
 
 
 void initShaderProgram(ShaderProgram* shaderProg) {

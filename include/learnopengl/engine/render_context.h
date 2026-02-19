@@ -5,11 +5,13 @@
 #include "learnopengl/engine/mesh.h"
 #include "learnopengl/engine/object.h"
 #include "learnopengl/engine/shader.h"
+#include "learnopengl/engine/skybox.h"
 typedef struct {
     ProjectionManager projectionManager;
     LightInfoManager lightManager;
     MaterialManager materialManager;
     TextureManager textureManager;
+    SkyboxManager skybox;
     Camera* camera;
 } RenderingContext ;
 // add framebuffers to render to file/ screen/ sockets, etc...

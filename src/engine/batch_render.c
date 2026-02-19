@@ -1,10 +1,12 @@
 #include "learnopengl/engine/object.h"
 #include "learnopengl/engine/shader.h"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <assert.h>
 #include <cglm/mat4.h>
 #include <cglm/types.h>
-#include <glad/glad.h>
 #include <learnopengl/engine/batch_render.h>
+#include <complex.h>
 #include <learnopengl/engine/global_info.h>
 #include <learnopengl/engine/mesh.h>
 #include <stddef.h>
@@ -118,7 +120,6 @@ void setUpBuffers(BatchRenderer *renderer) {
   glEnableVertexAttribArray(ATTR_LOCATION_TEXTURE_INDEX);
   glVertexAttribDivisor(ATTR_LOCATION_TEXTURE_INDEX, 1);
 
-
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
   glGenBuffers(1, &(renderer->drawCommandsBO));
@@ -142,7 +143,8 @@ void initBatchRenderer(BatchRenderer *renderer, uint maxVertices,
   renderer->maxShaders = maxShaders;
   renderer->numDrawCommands = 0;
 
-  renderer->materialsBuffer = malloc(sizeof(MaterialData) * renderer->maxModels);
+  renderer->materialsBuffer =
+      malloc(sizeof(MaterialData) * renderer->maxModels);
   renderer->modelsBuffer = malloc(sizeof(mat4) * renderer->maxModels);
   renderer->invModelsBuffer = malloc(sizeof(mat4) * renderer->maxModels);
   renderer->textureIndicesBuffer = malloc(sizeof(uint) * renderer->maxModels);
@@ -416,7 +418,12 @@ uint addMeshesToRenderer(BatchRenderer *renderer, GameObject *object,
   return BATCH_RENDER_OK;
 }
 
-uint copyObjectToBuffer(BatchRenderer *renderer, GameObject *object, uint textureIndex) {
+static uint framecount = 0;
+static float totalTimeDraw = 0;
+static float totalTimeSend = 0;
+
+uint copyObjectToBuffer(BatchRenderer *renderer, GameObject *object,
+                        uint textureIndex) {
 
   if (renderer->maxModels <= renderer->numModels)
     return BATCH_RENDER_NO_SPACE;
@@ -450,11 +457,14 @@ uint copyObjectToBuffer(BatchRenderer *renderer, GameObject *object, uint textur
     initRenderData(renderer, object->shaderProgram);
   }
 
-  uint texIndex = object->numTextures >0 ? glGetTextureSamplerHandleARB(object->textures->glID, object->sampler->glID): 0;
+  uint texIndex = object->numTextures > 0
+                      ? glGetTextureSamplerHandleARB(object->textures->glID,
+                                                     object->sampler->glID)
+                      : 0;
 
-  uint result =
-      copyObjectToRenderingData(renderer, renderer->renderingData + shaderIndex,
-                                renderer->meshes + meshIndex, object, textureIndex);
+  uint result = copyObjectToRenderingData(
+      renderer, renderer->renderingData + shaderIndex,
+      renderer->meshes + meshIndex, object, textureIndex);
   renderer->numModels++;
   return result;
 }
@@ -477,9 +487,23 @@ void flush(BatchRenderer *renderer) {
       !renderer->numDrawCommands || !renderer->numShaders)
     return;
 
-  sendDataToGPU(renderer);
 
+  sendDataToGPU(renderer);
+  // framecount ++;
+  // float start = glfwGetTime();
+  // float endSend = glfwGetTime();
   draw(renderer);
+  // float endDraw = glfwGetTime();
+
+  // totalTimeDraw += endDraw - endSend;
+  // totalTimeSend += endSend - start;
+
+  // if (framecount % 20 == 0) {
+  //   // printf("sending to GPU: %0.6f\n", totalTimeSend / 20);
+  //   // printf("drawing: %0.6f\n", totalTimeDraw / 20);
+  //   totalTimeDraw = 0;
+  //   totalTimeSend = 0;
+  // }
 
   renderer->numVertices = 0;
   renderer->numElements = 0;
@@ -489,7 +513,8 @@ void flush(BatchRenderer *renderer) {
   renderer->numDrawCommands = 0;
 }
 
-void renderObjectBatch(BatchRenderer *renderer, GameObject *object, uint textureIndex) {
+void renderObjectBatch(BatchRenderer *renderer, GameObject *object,
+                       uint textureIndex) {
   int retCode = BATCH_RENDER_NO_SPACE;
   uint iters = 0;
   while (((retCode = copyObjectToBuffer(renderer, object, textureIndex)) ==

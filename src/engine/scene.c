@@ -36,7 +36,7 @@ void initScene(Scene *scene, Camera *camera, uint maxShaders, uint maxObjects,
   scene->shaders = malloc(sizeof(ShaderProgram *) * maxShaders);
   scene->textureIndicesDynamic = malloc(sizeof(uint) * scene->maxObjects);
   scene->textureIndicesStatic = malloc(sizeof(uint) * scene->maxObjects);
-  scene->skybox = NULL;
+  scene->hasSkybox = false;
 }
 
 void addObjectToScene(Scene *scene, GameObject *object, uint objectType) {
@@ -86,44 +86,44 @@ void addLightToScene(Scene *scene, LightSource *light, uint objectType) {
 void preLoop(Scene *scene) {
 
   // uint result;
-  // for (int i = 0; i < scene->numObjectsStatic; i++) {
-  //   if ((result = copyObjectToBuffer(&scene->staticRenderer,
-  //                                    scene->staticObjects[i])) !=
+  // for (int i = 0; i < scene->numObjectsDynamic; i++) {
+  //   if ((result = copyObjectToBuffer(&scene->dynamicRenderer,
+  //                                    scene->dynamicObjects[i], scene->textureIndicesDynamic[i])) !=
   //       BATCH_RENDER_OK)
   //     break;
   // }
-  // // sendDataToGPU(&scene->staticRenderer);
   // sendDataToGPU(&scene->dynamicRenderer);
+
 }
 
 void renderLoop(Scene *scene) {
   for (int i = 0; i < scene->numLights; i++)
     addLightToContext(&scene->renderingContext, scene->lights[i]);
-
   for (int i = 0; i < scene->numObjectsDynamic; i++)
     addObjectToContext(&scene->renderingContext, scene->dynamicObjects[i]);
 
-
   updateContext(&scene->renderingContext);
 
-  if (scene->skybox != NULL)
-    renderSkybox(scene->skybox);
+  if (scene->hasSkybox)
+    renderSkybox(&scene->renderingContext.skybox);
 
   for (int i = 0; i < scene->numObjectsDynamic; i++)
     renderObjectBatch(&scene->dynamicRenderer, scene->dynamicObjects[i], scene->textureIndicesDynamic[i]);
 
   flush(&scene->dynamicRenderer);
-//
+  // draw(&scene->dynamicRenderer);
 }
 
-void setSkybox(Scene *scene, Skybox *skybox, Texture *texture,
-               Sampler *sampler) {
+void setSkybox(Scene *scene,  Texture *texture,
+               Sampler *sampler, ShaderProgram* shaderProgram) {
   uint index =
       addTexture(&scene->renderingContext.textureManager, texture, sampler);
   scene->numTextures = scene->renderingContext.textureManager.numHandles;
-  scene->skybox = skybox;
-  attachContextToShader(&scene->renderingContext, skybox->shaderProgram);
-  setSkyboxTextureIndex(skybox, index);
+  SkyboxManager* skybox = &scene->renderingContext.skybox;
+  setSkyboxShader(skybox, shaderProgram);
+  setSkyboxTextureIndex(&scene->renderingContext.skybox, index);
+  scene->hasSkybox = true;
+  attachContextToShader(&scene->renderingContext, shaderProgram);
 }
 
 void freeTextures(Scene *scene) {
