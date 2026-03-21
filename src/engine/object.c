@@ -100,7 +100,7 @@ void setDiffuseCoeffificent(Material* material, float diffuse ){
 void setSpecularCoeffificent(Material* material, float specular ){
     material->specularCoefficient = specular;
 }
-void setReflectionCoeffificent(Material* material, float reflection  ){
+void setReflectionStrength(Material* material, float reflection  ){
     material->reflectionIndex = reflection;
 }
 void setRefractionIndex(Material* material, float refractionIndex ){

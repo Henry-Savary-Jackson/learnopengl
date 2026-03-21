@@ -164,6 +164,7 @@ int main() {
   setDiffuseCoeffificent(&material, 100);
   setSpecularCoeffificent(&material, 100);
   setRefractionIndex(&material, 1/1.52);
+  setReflectionStrength(&material, 0.6);
 
   Sampler sampler;
   initSampler(&sampler);
@@ -214,15 +215,19 @@ int main() {
   loadModelFromFile("models/bull.obj", &bullMesh);
 
   Mesh dragonMesh;
-  loadModelFromFile("models/bunny.obj", &dragonMesh);
+  loadModelFromFile("models/bull.obj", &dragonMesh);
+
+
 
   srand(10);
   int numObjects = 100;
   GameObject *objects = malloc(numObjects * sizeof(GameObject));
   for (int i = 0; i < numObjects; i++) {
     initGameObject(&objects[i]);
-    scaleGameObjectFloat(&objects[i], i % 2 ? 1 : 10);
-    setMeshGameObject(&objects[i], i % 2 ? &meshCube : &dragonMesh);
+    // scaleGameObjectFloat(&objects[i], i % 2 ? 0.01 : 0.01);
+    // setMeshGameObject(&objects[i], i % 2 ? &bullMesh : &dragonMesh);
+    scaleGameObjectFloat(&objects[i], 1);
+    setMeshGameObject(&objects[i], &meshCube);
     setShaderProgramGameObject(&objects[i], &shaderProgram);
     setTexturesGameObject(objects + i, &texture, 1);
     setMaterialGameObject(&objects[i], &material);
@@ -257,6 +262,7 @@ int main() {
   float lastFrameUpdate = 0;
 
   // bind the manager to send global shader info
+  glEnable(GL_FRAMEBUFFER_SRGB);
 
   preLoop(&scene);
 

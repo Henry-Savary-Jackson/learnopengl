@@ -60,7 +60,13 @@ void initShaderFromFile(Shader* shader,const char *path) {
   assert(result);
 }
 
-
+void setShaderAttributeLocations(ShaderProgram* program){
+  for (int i =0; i < sizeof(attributes)/sizeof(attributeSpec); i++) {
+    glBindAttribLocation(program->id, attributes[i].location, attributes[i].name);
+    // uint loc = glGetAttribLocation(program->id, attributes[i].name);
+    // if ( loc != GL_INVALID_INDEX)
+  }
+}
 
 void attachShadersToProgram(ShaderProgram* program, Shader shaders[], int length) {
   program->shaders = shaders;
@@ -68,6 +74,10 @@ void attachShadersToProgram(ShaderProgram* program, Shader shaders[], int length
   for (int i = 0; i < length; i++) {
     glAttachShader(program->id, shaders[i].id);
   }
+
+  // make sure all the attributes we want can be accesed by the shader
+
+  setShaderAttributeLocations(program);
   glLinkProgram(program->id);
   GLint result;
   glGetProgramiv(program->id, GL_LINK_STATUS, &result);

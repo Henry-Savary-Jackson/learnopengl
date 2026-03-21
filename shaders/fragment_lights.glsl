@@ -16,8 +16,8 @@ out vec4 FragColor;
 struct Material {
     vec4 colour;
     vec3 coeffs;
-    float reflectionIndex;
     float refractionIndex;
+    float reflectionStrength;
     uint specularMapIndex;
     uint normalMapIndex;
 };
@@ -86,13 +86,13 @@ void main()
 {
     vec3 colour = vec3(0,0,0);
     Material material = materials[materialIndex];
-    // for (int i = 0 ; i < numLights.x; i ++){
-    //     colour += getColourLight(lightData[i], material );
-    // }
+    for (int i = 0 ; i < numLights.x; i ++){
+        colour += getColourLight(lightData[i], material );
+    }
     vec3 I = normalize(fragPos - cameraPos);
-    vec3 R = refract(I, normalize(normal), material.refractionIndex);
+    vec3 R = reflect(I, normalize(normal));
     // FragColor = texture(sampler2D(textures[textureIndexFrag]), texPos) ;
-    FragColor = vec4(texture(samplerCube(textures[skyboxCubeMapIndex]), R).rgb, 1);
-    // FragColor *= vec4(colour,1) ;
+    FragColor = vec4(texture(samplerCube(textures[skyboxCubeMapIndex]), R).rgb, 1) * material.reflectionStrength;
+    FragColor *= vec4(colour,1) ;
 
 }

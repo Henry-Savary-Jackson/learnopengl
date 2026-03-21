@@ -1,7 +1,7 @@
 #version 460 core
 #extension GL_ARB_bindless_texture : require
 
-layout (location = 0) in vec3 aPos;
+in vec3 aPos;
 
 out vec3 texPos ;
 

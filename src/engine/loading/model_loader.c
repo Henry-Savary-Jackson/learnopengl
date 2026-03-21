@@ -1,5 +1,7 @@
 #include "learnopengl/engine/mesh.h"
 #include <assert.h>
+#include <cglm/struct/vec2.h>
+#include <cglm/struct/vec3.h>
 #include <cglm/vec3.h>
 #include <learnopengl/engine/loading/model_loader.h>
 #include <learnopengl/utils/arraylist.h>
@@ -16,8 +18,13 @@ const char *NORMAL_MARKER = "vn";
 const char *TEXTURE_MARKER = "vt";
 const char *FACE_MARKER = "f";
 
+uint getTangents(ArrayList_vertex *vertices, ArrayList_i *indices);
 uint decodeFacePoint(char *facePoint, Vertex *vertex, ArrayList_vec3 *normals,
                      ArrayList_vec3 *positions, ArrayList_vec2 *textureCoords) {
+  // VERY IMPORTANT TO ZERO OUT
+  // OTHERWISE THINGS LIKE tangetn and bitagnetns break
+  memset(vertex, 0, sizeof(Vertex));
+
   uint posIndex, normalIndex, uvIndex;
   uint numScanned =
       sscanf(facePoint, "%d/%d/%d", &posIndex, &uvIndex, &normalIndex);
@@ -36,17 +43,11 @@ uint decodeFacePoint(char *facePoint, Vertex *vertex, ArrayList_vec3 *normals,
 
   // assert(normalIndex >= 0 && normalIndex < normals->length);
   uint result = getAt_vec3(normals, normalIndex, &vertex->normal);
-  if (result)
-    vertex->normal = (vec3s){0, 0, 0};
   // assert(posIndex >= 0 && posIndex < positions->length);
   result = getAt_vec3(positions, posIndex, &vertex->pos);
   assert(!result);
-  // if (result)
-  //   vertex->pos = (vec3s){0, 0, 0};
   // assert(uvIndex >= 0 && uvIndex < textureCoords->length);
   result = getAt_vec2(textureCoords, uvIndex, &vertex->texPos);
-  if (result)
-    vertex->texPos = (vec2s){0, 0};
 
   return 0;
 }
@@ -153,7 +154,10 @@ uint loadModelFromFile(const char *path, Mesh *mesh) {
     free(line);
   }
 
-  initMesh(mesh, vertices.ptr, vertices.length, elementIndex.ptr, elementIndex.length);
+  getTangents(&vertices, &elementIndex);
+
+  initMesh(mesh, vertices.ptr, vertices.length, elementIndex.ptr,
+           elementIndex.length);
 
   destroyArrayList_vec3(&positions);
   destroyArrayList_vec2(&textureCoords);
@@ -166,4 +170,47 @@ uint loadModelFromFile(const char *path, Mesh *mesh) {
 
 error:
   return -1;
+}
+
+uint getTangents(ArrayList_vertex *vertices, ArrayList_i *indices) {
+
+  for (int i = 0; i < indices->length; i += 3) {
+    Vertex *v0 = vertices->ptr + indices->ptr[i];
+    Vertex *v1 = vertices->ptr + indices->ptr[i + 1];
+    Vertex *v2 = vertices->ptr + indices->ptr[i + 2];
+
+    vec3s dPos1 = glms_vec3_sub(v1->pos, v0->pos);
+    vec3s dPos2 = glms_vec3_sub(v2->pos, v0->pos);
+    vec2s dUV1 = glms_vec2_sub(v1->texPos, v0->texPos);
+    vec2s dUV2 = glms_vec2_sub(v2->texPos, v0->texPos);
+
+    float r = 1 / (dUV1.x * dUV2.y - dUV1.y * dUV2.x);
+    vec3s tangent, tempTangent, bitangent, tempBitangent;
+    tangent = glms_vec3_scale(dPos1, dUV2.y);
+    tempTangent = glms_vec3_scale(dPos2, dUV1.y);
+    tangent = glms_vec3_sub(tangent, tempTangent);
+    tangent = glms_vec3_scale(tangent, r);
+
+    bitangent = glms_vec3_scale(dPos2, dUV1.x);
+    tempBitangent = glms_vec3_scale(dPos1, dUV2.x);
+    bitangent = glms_vec3_sub(bitangent, tempBitangent);
+    bitangent = glms_vec3_scale(bitangent, r);
+
+    v0->biTangent = glms_vec3_add(v0->biTangent, bitangent);
+    v0->tangent = glms_vec3_add(v0->tangent, tangent);
+
+    v1->biTangent = glms_vec3_add(v1->biTangent, bitangent);
+    v1->tangent = glms_vec3_add(v1->tangent, tangent);
+
+    v2->biTangent = glms_vec3_add(v2->biTangent, bitangent);
+    v2->tangent = glms_vec3_add(v2->tangent, tangent);
+  }
+
+  // removes need to normalize in shaders
+  for (int i = 0; i < vertices->length; i++) {
+    vertices->ptr[i].tangent = glms_normalize(vertices->ptr[i].tangent);
+    vertices->ptr[i].biTangent = glms_normalize(vertices->ptr[i].biTangent);
+  }
+
+  return 0;
 }

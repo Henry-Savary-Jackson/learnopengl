@@ -1,9 +1,9 @@
 #version 460 core
-layout (location = 0) in vec3 aPos;
-layout (location = 1 ) in vec2 texCoord;
-layout (location = 2 ) in uint modelIndex;
-layout (location = 3) in mat4 model;
-layout (location = 7) in mat4 invModel;
+in vec3 aPos;
+in vec2 aUV;
+in uint aModelIndex;
+in mat4 aModel;
+in mat4 aInvModel;
 out vec2 texPos ;
 flat out vec3 colour;
 
@@ -30,7 +30,7 @@ layout (std430) buffer Lights{
 
 void main()
 {
-    texPos = texCoord;
+    texPos = aUV;
     colour = lightData[gl_InstanceID].colour.rgb;
-    gl_Position = projectionTimesView  * model* vec4(aPos  , 1.0) ;
+    gl_Position = projectionTimesView  * aModel * vec4(aPos  , 1.0) ;
 }

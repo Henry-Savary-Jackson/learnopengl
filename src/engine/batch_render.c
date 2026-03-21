@@ -1,12 +1,12 @@
 #include "learnopengl/engine/object.h"
-#include "learnopengl/engine/shader.h"
 #include <glad/glad.h>
+#include "learnopengl/engine/shader.h"
 #include <GLFW/glfw3.h>
 #include <assert.h>
 #include <cglm/mat4.h>
 #include <cglm/types.h>
-#include <learnopengl/engine/batch_render.h>
 #include <complex.h>
+#include <learnopengl/engine/batch_render.h>
 #include <learnopengl/engine/global_info.h>
 #include <learnopengl/engine/mesh.h>
 #include <stddef.h>
@@ -14,18 +14,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const uint SHADER_BUFFER_LIGHT_BINDING = 0;
-static const uint UNIFORM_VIEW_PROJ_BINDING = 1;
-static const uint UNIFORM_MATERIAL_BINDING = 2;
-static const uint SHADER_BUFFER_MODELS_BIND = 3;
-
-static const uint ATTR_LOCATION_POS = 0;
-static const uint ATTR_LOCATION_UV = 1;
-static const uint ATTR_LOCATION_NORM = 2;
-static const uint ATTR_LOCATION_MODEL = 3;
-static const uint ATTR_LOCATION_INV_MODEL = 7;
-static const uint ATTR_LOCATION_MATERIAL_INDEX = 11;
-static const uint ATTR_LOCATION_TEXTURE_INDEX = 12;
 
 void setUpBuffers(BatchRenderer *renderer) {
   // Initialize VAO
@@ -56,6 +44,17 @@ void setUpBuffers(BatchRenderer *renderer) {
                         sizeof(Vertex), (void *)offsetof(Vertex, normal));
 
   glEnableVertexAttribArray(ATTR_LOCATION_NORM); // normal vectors attribute
+
+  glVertexAttribPointer(ATTR_LOCATION_TANGENT, 3, GL_FLOAT, GL_FALSE,
+                        sizeof(Vertex), (void *)offsetof(Vertex, tangent));
+
+  glEnableVertexAttribArray(ATTR_LOCATION_TANGENT); // normal vectors attribute
+
+  glVertexAttribPointer(ATTR_LOCATION_BITANGENT, 3, GL_FLOAT, GL_FALSE,
+                        sizeof(Vertex), (void *)offsetof(Vertex, biTangent));
+
+  glEnableVertexAttribArray(
+      ATTR_LOCATION_BITANGENT); // normal vectors attribute
 
   // create corresponding shader attribute
 
@@ -486,7 +485,6 @@ void flush(BatchRenderer *renderer) {
   if (!renderer->numModels || !renderer->numVertices ||
       !renderer->numDrawCommands || !renderer->numShaders)
     return;
-
 
   sendDataToGPU(renderer);
   // framecount ++;

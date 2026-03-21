@@ -8,7 +8,6 @@
 #include <learnopengl/engine/shader.h>
 #include <sys/types.h>
 
-
 // keep track of shader for each draw call
 // bind each shader
 //

@@ -2,13 +2,15 @@
 #extension GL_ARB_bindless_texture : require
 // #extension GL_EXT_nonuniform_qualifier : require
 
-layout (location = 0) in vec3 aPos;
-layout (location = 1 ) in vec2 aTexPos;
-layout (location = 2 ) in vec3 aNormal;
-layout (location = 3) in mat4 model;
-layout (location = 7) in mat4 invModel;
-layout (location = 11) in uint matIndex;
-layout (location = 12) in uint textureIndex;
+in vec3 aPos;
+in vec2 aTexPos;
+in vec3 aNormal;
+in vec3 aTangent;
+in vec3 aBiTangent;
+in mat4 aModel;
+in mat4 aInvModel;
+in uint aMaterialIndex;
+in uint aTextureIndex;
 
 out vec2 texPos ;
 out vec3 normalCamera;
@@ -32,11 +34,11 @@ void main()
 
     // invModel is transpose(inverse(model))
     // precomputed for efficiency
-    normal = normalize(  vec3( invModel* vec4(aNormal,1))   );
+    normal = normalize(  vec3( aInvModel* vec4(aNormal,1))   );
 
     normalCamera = normalize( vec3( view * vec4(normal,0)));
 
-    vec4 modelPos = model * vec4(aPos , 1.0);
+    vec4 modelPos = aModel * vec4(aPos , 1.0);
     fragPos = vec3(modelPos);
     vec4 vertexPosCamera = view * modelPos;
 
@@ -44,7 +46,7 @@ void main()
 
     gl_Position = projection * vertexPosCamera ;
 
-    materialIndex = matIndex;
+    materialIndex = aMaterialIndex;
 
-    textureIndexFrag = textureIndex;
+    textureIndexFrag = aTextureIndex;
 }
