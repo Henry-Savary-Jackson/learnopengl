@@ -2,24 +2,30 @@
 #extension GL_ARB_bindless_texture : require
 layout (bindless_sampler) uniform;
 
-in vec2 texPos;
-in vec3 normalCamera;
-in vec3 normal;
-in vec3 fragPosCamera;
-in vec3 fragPos;
+in VS_OUT{
+ vec2 texPos ;
+ vec3 normal;
+ vec3 normalCamera;
+ vec3 fragPosCamera;
+ vec3 fragPos;
+ vec3 tangent;
+ vec3 bitangent;
+ vec3 N;
+};
+
 flat in uint materialIndex;
-flat in uint  textureIndexFrag;
+flat in uint textureIndexFrag;
 
 out vec4 FragColor;
 
 
 struct Material {
     vec4 colour;
-    vec3 coeffs;
+    vec4 coeffs;
     float refractionIndex;
     float reflectionStrength;
-    uint specularMapIndex;
-    uint normalMapIndex;
+    int specularMapIndex;
+    int normalMapIndex;
 };
 
 uniform uint skyboxCubeMapIndex;
@@ -52,8 +58,27 @@ layout(std140) uniform ViewProjection{
     vec3 cameraDirection;
 };
 
+vec3 getDiffuseFromNormalMap( int lightIndex, inout Material material){
+    LightSource light = lightData[lightIndex];
+
+    mat3 TBN = transpose(mat3(tangent,bitangent,N));
+
+    vec3 lightPosTangent = TBN * light.positionCamera.xyz;
+    vec3 fragPosCameraTangent = TBN * fragPosCamera;
+
+    vec3 lightFragDiff = lightPosTangent-fragPosCameraTangent;
+
+    float diffuseCoeff = material.coeffs.y;
+
+    vec3 lightDir = normalize( lightFragDiff );
+    vec3 norm = texture( sampler2D(textures[material.normalMapIndex]), texPos).rgb;
+    vec3 diffuse = clamp(dot( norm , lightDir) ,0, 1)  *light.colour.xyz* diffuseCoeff;
+    return diffuse;
+}
+
 // get the contribution of one point light to the pixel
-vec3 getColourLight( inout LightSource light, inout Material material){
+vec3 getColourLight(  int lightIndex, inout Material material){
+    LightSource light = lightData[lightIndex];
 
     vec3 lightColour = light.colour.rgb;
     float ambientCoeff = material.coeffs.x;
@@ -68,12 +93,18 @@ vec3 getColourLight( inout LightSource light, inout Material material){
     vec3 lightFragDiff = lightPosCamera-fragPosCamera;
     float intensity = 1/pow(length(lightFragDiff),2);
 
-    float diffuseCoeff = material.coeffs.y;
     float specularCoeff = material.coeffs.z;
 
     vec3 lightDir = normalize( lightFragDiff );
     vec3 norm = normalize(normalCamera);
-    vec3 diffuse = clamp(dot( norm , lightDir) ,0, 1)  *lightColour* diffuseCoeff;
+    vec3 diffuse = vec3(0,0,0);
+
+    if (material.normalMapIndex != -1){
+        diffuse = getDiffuseFromNormalMap(lightIndex, material);
+    }else{
+        float diffuseCoeff = material.coeffs.y;
+        diffuse = clamp(dot( norm , lightDir) ,0, 1)  *lightColour* diffuseCoeff;
+    }
 
     float spec =  clamp(dot(reflect(lightDir,norm), normalize(fragPosCamera)  ),0,1) ;
     vec3 specular = pow(spec,128) * lightColour * specularCoeff;;
@@ -87,12 +118,13 @@ void main()
     vec3 colour = vec3(0,0,0);
     Material material = materials[materialIndex];
     for (int i = 0 ; i < numLights.x; i ++){
-        colour += getColourLight(lightData[i], material );
+        colour += getColourLight(i, material );
     }
     vec3 I = normalize(fragPos - cameraPos);
-    vec3 R = reflect(I, normalize(normal));
+    vec3 R = refract(I, normalize(normal), material.refractionIndex);
     // FragColor = texture(sampler2D(textures[textureIndexFrag]), texPos) ;
     FragColor = vec4(texture(samplerCube(textures[skyboxCubeMapIndex]), R).rgb, 1) * material.reflectionStrength;
     FragColor *= vec4(colour,1) ;
+
 
 }

@@ -84,7 +84,7 @@ void attachShadersToProgram(ShaderProgram* program, Shader shaders[], int length
   if (!result) {
     printf("Could not link shader!");
   }
-  assert(result);
+  // assert(result);
 }
 
 

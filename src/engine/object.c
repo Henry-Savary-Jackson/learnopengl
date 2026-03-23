@@ -123,6 +123,6 @@ void setMaterialData(MaterialData* materialData, Material * material, TextureMan
     materialData->reflectionIndex = material->reflectionIndex;
     materialData->refractionIndex = material->refractionIndex;
     materialData->colour = material->colour;
-    materialData->specularMap = !material->specularMap ? -1  : addTexture(textureManager, material->normalMap, material->normalSampler) ;
-    materialData->normalMap = !material->normalMap ? -1  : addTexture(textureManager, material->specularMap, material->specularSampler) ;
+    materialData->specularMap = !material->specularMap ? -1  : addTexture(textureManager, material->specularMap, material->specularSampler) ;
+    materialData->normalMap = !material->normalMap ? -1  : addTexture(textureManager, material->normalMap, material->normalSampler) ;
 }

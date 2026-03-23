@@ -156,15 +156,9 @@ int main() {
   initTexture(&skyBoxTexture, "skybox");
   loadTextureCubeMap(&skyBoxTexture, "./textures/skybox", faces);
 
-
-  Material material;
-  initMaterial(&material);
-  setMaterialColour(&material, (vec3s){1, 1, 0});
-  setAmbientCoeffificent(&material, 0.02);
-  setDiffuseCoeffificent(&material, 100);
-  setSpecularCoeffificent(&material, 100);
-  setRefractionIndex(&material, 1/1.52);
-  setReflectionStrength(&material, 0.6);
+  Texture normalMapBrickwall;
+  initTexture(&normalMapBrickwall, "brick_normal");
+  loadTexture2D(&normalMapBrickwall, "./textures/brickwall_normal.jpg");
 
   Sampler sampler;
   initSampler(&sampler);
@@ -174,7 +168,17 @@ int main() {
                       GL_NEAREST_MIPMAP_LINEAR);
   setSamplerParameter(&sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-  // put vertices together
+  Material material;
+  initMaterial(&material);
+  setMaterialColour(&material, (vec3s){1, 1, 0});
+  setAmbientCoeffificent(&material, 0.02);
+  setDiffuseCoeffificent(&material, 100);
+  setSpecularCoeffificent(&material, 100);
+  setRefractionIndex(&material, 1/1.52);
+  setReflectionStrength(&material, 0.6);
+  setNormalMap(&material, &normalMapBrickwall, &sampler );
+
+    // put vertices together
 
   Mesh meshCube;
   loadModelFromFile("models/cube.obj", &meshCube);
