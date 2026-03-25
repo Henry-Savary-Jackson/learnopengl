@@ -2,7 +2,7 @@
 
 in vec2 texPos;
 in vec3 normalCamera;
-in vec3 fragPosCamera;  
+in vec3 fragPosCamera;
 in vec3 lightPosCamera;
 
 out vec4 FragColor;
@@ -35,7 +35,7 @@ void main()
     float spec =  clamp(dot(reflect(lightDir,norm), normalize(fragPosCamera)  ),0,1) ;
     vec3 specular = pow(spec,64) *lightColour;
 
-    
-    vec3 colour =  (ambient+ specular)*material.colour.xyz*distFactor*lightIntensity  ;   
+
+    vec3 colour =  (ambient+ specular)*material.colour.xyz*distFactor*lightIntensity  ;
     FragColor = mix(texture(texture0, texPos), texture(texture1, texPos) ,0.5) * vec4(colour, 1) ;
-} 
+}

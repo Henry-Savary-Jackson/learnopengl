@@ -58,7 +58,8 @@ void testPop(){
     ArrayList_f vector = getInitVector(CAPACITY, GROWTH);
     float arr[4] = {1,2,3,4};
     extendVector(&vector,arr,LENGTH(arr)) ;
-    float poppedVal = pop_f(&vector);
+    float poppedVal;
+    pop_f(&vector,&poppedVal);
     assert(poppedVal == arr[LENGTH(arr)-1]);
     assert(vector.length == LENGTH(arr)-1);
     assert(vector.ptr);
@@ -66,7 +67,9 @@ void testPop(){
 
 void testRemovingEmpty(){
     ArrayList_f vector = getInitVector(CAPACITY, GROWTH);
-    float poppedVal = pop_f(&vector);
+    float poppedVal ;
+    pop_f(&vector, &poppedVal);
+
     assert(isnan(poppedVal));
     assert(vector.length == 0);
     assert(vector.ptr);
@@ -123,7 +126,8 @@ void testRemoveEnd(){
     float arr[10] = {1,2,3,4, 5,6,7,8,9, 10};
     extendVector(&vector,arr,CAPACITY);
     uint index = CAPACITY -1;
-    float value = removeAt_f(&vector, index);
+    float value ;
+    removeAt_f(&vector, index, &value);
     assert(value == arr[index]);
     assert(vector.length == CAPACITY-1);
     assert(oldPtr == vector.ptr);
@@ -135,7 +139,8 @@ void testRemoveMiddle(){
     float arr[10] = {1,2,3,4, 5,6,7,8,9, 10};
     extendVector(&vector,arr,CAPACITY);
     uint index = 5;
-    float value = removeAt_f(&vector, index);
+    float value ;
+    removeAt_f(&vector, index , &value);
     assert(value == arr[index]);
     assert(!memcmp(arr, vector.ptr,( index)*sizeof(float)));
     assert(!memcmp(arr+index+1, vector.ptr+index,( CAPACITY-index-1 )*sizeof(float)));
@@ -150,7 +155,7 @@ void testRemoveStart(){
     float newArr[10] = {1,2,3,4, 5,6,7,8,9, 10};
     extendVector(&vector,newArr,CAPACITY);
     uint index = 0;
-    float value = removeAt_f(&vector, index);
+    float value ; removeAt_f(&vector, index, &value);
     assert(value == newArr[index]);
     // assert(memcmp(newArr, vector.ptr,( index)*sizeof(float)));
     assert(!memcmp(newArr+index+1, vector.ptr+index,( CAPACITY-index-1 )*sizeof(float)));

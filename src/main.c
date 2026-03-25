@@ -1,5 +1,5 @@
+#include "learnopengl/engine/framebuffer.h"
 #include <glad/glad.h>
-#include <learnopengl/engine/skybox.h>
 #include <GLFW/glfw3.h>
 #include <cglm/cam.h>
 #include <cglm/mat4.h>
@@ -13,6 +13,7 @@
 #include <learnopengl/engine/object.h>
 #include <learnopengl/engine/scene.h>
 #include <learnopengl/engine/shader.h>
+#include <learnopengl/engine/skybox.h>
 #include <learnopengl/engine/textures.h>
 #include <learnopengl/utils/arraylist.h>
 #include <learnopengl/utils/utils.h>
@@ -21,9 +22,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <threads.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <learnopengl/utils/stb_image.h>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <learnopengl/utils/stb_image_write.h>
 
 #define debug_impl
 #include <learnopengl/utils/debug.h>
@@ -66,12 +71,7 @@ float lastTime = 0.f;
 float getDetlaTime() { return glfwGetTime() - lastTime; }
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
-  if (currentCam) {
-    // setup camera
-    int width, height;
-    glfwGetWindowSize(window, &width, &height);
-    setCameraDims(currentCam, width, height);
-  }
+  setCameraDims(currentCam, width, height);
 }
 void pollInput(GLFWwindow *window) {
   float deltaTime = getDetlaTime();
@@ -137,13 +137,22 @@ int main() {
   glfwSetCursorPosCallback(window, mouse_callback);
 
   ShaderProgram shaderProgram;
-  initShaderProgramFromFiles(&shaderProgram, "./shaders/vertex_batched_with_lights.glsl", "./shaders/fragment_lights.glsl");
+  initShaderProgramFromFiles(&shaderProgram,
+                             "./shaders/vertex_batched_with_lights.glsl",
+                             "./shaders/fragment_lights.glsl");
 
   ShaderProgram lightShaderProgram;
-  initShaderProgramFromFiles(&lightShaderProgram, "./shaders/vertex_batched_for_lights.glsl",  "./shaders/light_source_fragment.glsl");
+  initShaderProgramFromFiles(&lightShaderProgram,
+                             "./shaders/vertex_batched_for_lights.glsl",
+                             "./shaders/light_source_fragment.glsl");
 
   ShaderProgram skyboxShader;
-  initShaderProgramFromFiles(&skyboxShader, "./shaders/vertex_skybox.glsl",  "./shaders/fragment_skybox.glsl");
+  initShaderProgramFromFiles(&skyboxShader, "./shaders/vertex_skybox.glsl",
+                             "./shaders/fragment_skybox.glsl");
+
+  ShaderProgram postProcShader;
+  initShaderProgramFromFiles(&postProcShader, "./shaders/framebuffer_vs.glsl",
+                             "./shaders/framebuffer_fs.glsl");
 
   Texture texture;
   initTexture(&texture, "container");
@@ -174,11 +183,11 @@ int main() {
   setAmbientCoeffificent(&material, 0.02);
   setDiffuseCoeffificent(&material, 100);
   setSpecularCoeffificent(&material, 100);
-  setRefractionIndex(&material, 1/1.52);
+  setRefractionIndex(&material, 1 / 1.52);
   setReflectionStrength(&material, 0.6);
-  setNormalMap(&material, &normalMapBrickwall, &sampler );
+  setNormalMap(&material, &normalMapBrickwall, &sampler);
 
-    // put vertices together
+  // put vertices together
 
   Mesh meshCube;
   loadModelFromFile("models/cube.obj", &meshCube);
@@ -221,8 +230,6 @@ int main() {
   Mesh dragonMesh;
   loadModelFromFile("models/bull.obj", &dragonMesh);
 
-
-
   srand(10);
   int numObjects = 100;
   GameObject *objects = malloc(numObjects * sizeof(GameObject));
@@ -263,16 +270,24 @@ int main() {
   glCullFace(GL_BACK);
   glfwSwapInterval(0);
 
+  FrameBuffer frameBuffer;
+  initFrameBuffer(&frameBuffer, WIDTH, HEIGHT);
+  attachShaderProgramToFrameBuffer(&frameBuffer, &postProcShader);
+
   float lastFrameUpdate = 0;
 
   // bind the manager to send global shader info
   glEnable(GL_FRAMEBUFFER_SRGB);
 
   preLoop(&scene);
+  bool saved = false;
 
   float dt = 0;
   while (!glfwWindowShouldClose(window)) {
     float startTime = glfwGetTime();
+
+    bindFrameBuffer(&frameBuffer, camera.width, camera.height);
+
     glClearColor(0.2f, 0.4f, 0.4f, 1.0f);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -292,22 +307,30 @@ int main() {
     // -- CALL TO RENDER --
     renderLoop(&scene);
 
-    // float start = glfwGetTime();
-    glfwSwapBuffers(window);
+    float start = glfwGetTime();
 
-    // float end = glfwGetTime();
-    // totalTimeSwap += end -start;
-    // framecount ++;
+    float end = glfwGetTime();
+    totalTimeSwap += end - start;
+    framecount++;
 
-    // if (framecount % 20 == 0){
+    if (framecount % 20 == 0) {
 
-    //   // printf("swap buffers: %0.9f\n\n", totalTimeSwap /20 );
-    //   totalTimeSwap = 0;
+      // printf("swap buffers: %0.9f\n\n", totalTimeSwap /20 );
+      totalTimeSwap = 0;
+    }
 
-    // }
+    unbindFrameBuffer(&frameBuffer);
+
+    glClearColor(0.2f, 0.4f, 0.4f, 1.0f);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    renderFrameBuffer(&frameBuffer, camera.width, camera.height);
 
     glfwPollEvents();
     pollInput(window);
+    glfwSwapBuffers(window);
+
 
     // performance tracking
     dt = getDetlaTime();
@@ -321,6 +344,7 @@ int main() {
               (int)(1 / frameTime));
       glfwSetWindowTitle(window, frameTimeStr);
     }
+
     // printf("frame done!\n");
   }
 

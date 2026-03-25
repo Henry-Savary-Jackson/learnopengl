@@ -11,6 +11,7 @@ void loadTexture2D(Texture *texture, const char *path);
 void loadTextureCubeMap(Texture *texture, const char *path,
                         const char *sides[6]);
 
+
 void freeTexture(Texture *texture);
 
 void initSampler(Sampler *sampler);
