@@ -1,7 +1,7 @@
 #version 460 core
 
-layout in vec3 aPos;
-layout in vec2 aUV;
+in vec3 aPos;
+in vec2 aUV;
 
 out vec2 texC;
 

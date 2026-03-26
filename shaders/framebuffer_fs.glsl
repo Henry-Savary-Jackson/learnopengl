@@ -5,38 +5,42 @@ in vec2 texC;
 
 out vec4 FragColor;
 
-uniform sampler2D tex;
+uniform sampler2D image0;
+uniform sampler2D image1;
 
-const float offset = 1.0 / 500.0;
+uniform bool horizontal;
+uniform bool first;
+
+uniform float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
+
+vec3 getBlurResult( sampler2D image){
+    vec2 tex_offset = 1.0 / textureSize(image, 0); // gets size of single texel
+    vec3 result = texture(image, texC).rgb * weight[0]; // current fragment's contribution
+    if(horizontal)
+    {
+        for(int i = 1; i < 5; ++i)
+        {
+            result += texture(image, texC + vec2(tex_offset.x * i, 0.0)).rgb * weight[i];
+            result += texture(image, texC - vec2(tex_offset.x * i, 0.0)).rgb * weight[i];
+        }
+    }
+    else
+    {
+        for(int i = 1; i < 5; ++i)
+        {
+            result += texture(image, texC + vec2(0.0, tex_offset.y * i)).rgb * weight[i];
+            result += texture(image, texC - vec2(0.0, tex_offset.y * i)).rgb * weight[i];
+        }
+    }
+    return result;
+
+}
 
 void main()
 {
-    vec2 offsets[9] = vec2[](
-        vec2(-offset,  offset), // top-left
-        vec2( 0.0f,    offset), // top-center
-        vec2( offset,  offset), // top-right
-        vec2(-offset,  0.0f),   // center-left
-        vec2( 0.0f,    0.0f),   // center-center
-        vec2( offset,  0.0f),   // center-right
-        vec2(-offset, -offset), // bottom-left
-        vec2( 0.0f,   -offset), // bottom-center
-        vec2( offset, -offset)  // bottom-right
-    );
-
-    float kernel[9] = float[](
-        0.075, 0.125, 0.075,
-        0.125, 0.25, 0.15,
-        0.075, 0.125, 0.075
-    );
-
-    vec3 sampleTex[9];
-    for(int i = 0; i < 9; i++)
-    {
-        sampleTex[i] = vec3(texture(tex, texC + offsets[i]));
+    if (first){
+        FragColor = vec4(getBlurResult(image1),1);
+    }else {
+        FragColor = vec4(getBlurResult(image0),1);
     }
-    vec3 col = vec3(0);
-    for(int i = 0; i < 9; i++)
-        col += sampleTex[i] * kernel[i];
-
-    FragColor = vec4(col, 1);
 }

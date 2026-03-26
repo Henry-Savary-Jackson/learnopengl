@@ -6,9 +6,9 @@ with different textures, shaders and meshes as well as multiple lights
 - [x] add skyboxes
 
 - Implement a way to add post-processing effects 
-    - Blur
-    - Bloom
-    - Edge detection
+    - [x] Blur
+    - [x] Bloom
+    - [x] Edge detection
     - Stencils
 - Implement basic trasparency
 - Implement deffered lighting for multiple lights (might conflict with trasnparency)

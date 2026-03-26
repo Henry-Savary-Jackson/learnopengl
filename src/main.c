@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 #include <threads.h>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -154,6 +155,14 @@ int main() {
   initShaderProgramFromFiles(&postProcShader, "./shaders/framebuffer_vs.glsl",
                              "./shaders/framebuffer_fs.glsl");
 
+  ShaderProgram combineShaderHDR;
+  initShaderProgramFromFiles(&combineShaderHDR, "./shaders/framebuffer_vs.glsl",
+                             "./shaders/framebuffer_fs_combine.glsl");
+
+
+  ShaderProgram new;
+  initShaderProgramFromFiles(&new, "./shaders/framebuffer_vs.glsl",
+                             "./shaders/new.glsl");
   Texture texture;
   initTexture(&texture, "container");
   loadTexture2D(&texture, "./textures/container.jpg");
@@ -271,16 +280,24 @@ int main() {
   glfwSwapInterval(0);
 
   FrameBuffer frameBuffer;
-  initFrameBuffer(&frameBuffer, WIDTH, HEIGHT);
-  attachShaderProgramToFrameBuffer(&frameBuffer, &postProcShader);
+  initFrameBuffer(&frameBuffer,  2);
+
+  FrameBuffer pingBlurFrameBuffer;
+  initFrameBuffer(&pingBlurFrameBuffer, 1);
+  FrameBuffer pongBlurFrameBuffer;
+  initFrameBuffer(&pongBlurFrameBuffer,  1);
+
+  FrameBuffer finalFrameBuffer;
+  initFrameBuffer(&finalFrameBuffer,  1);
 
   float lastFrameUpdate = 0;
 
   // bind the manager to send global shader info
-  glEnable(GL_FRAMEBUFFER_SRGB);
-
-  preLoop(&scene);
+  // glEnable(GL_FRAMEBUFFER_SRGB);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   bool saved = false;
+  preLoop(&scene);
 
   float dt = 0;
   while (!glfwWindowShouldClose(window)) {
@@ -288,8 +305,7 @@ int main() {
 
     bindFrameBuffer(&frameBuffer, camera.width, camera.height);
 
-    glClearColor(0.2f, 0.4f, 0.4f, 1.0f);
-
+    glClearColor(0.0f, 0.0f, 0, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // -- GAME LOGIC --
@@ -299,41 +315,76 @@ int main() {
                    objects[i].rotation.raw);
     }
 
-    for (int i = 0; i < numLights; i++) {
-      rotateGameObjectAround(&(lights[i].object), 1.f * dt, (vec3){0, 2, 1},
-                             (vec3){4, 2, 3});
-    }
+    // for (int i = 0; i < numLights; i++) {
+    //   rotateGameObjectAround(&(lights[i].object), 1.f * dt, (vec3){0, 2, 1},
+    //                          (vec3){4, 2, 3});
+    // }
 
     // -- CALL TO RENDER --
     renderLoop(&scene);
 
-    float start = glfwGetTime();
 
-    float end = glfwGetTime();
-    totalTimeSwap += end - start;
-    framecount++;
-
-    if (framecount % 20 == 0) {
-
-      // printf("swap buffers: %0.9f\n\n", totalTimeSwap /20 );
-      totalTimeSwap = 0;
+    bool horizontal = true;
+    bool first = true;
+    int amount =4;
+    FrameBuffer* pingpong[2] = {&pingBlurFrameBuffer, &pongBlurFrameBuffer};
+    for (int i =0; i < amount; i++){
+      bindFrameBuffer(pingpong[horizontal], camera.width, camera.height);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      // if (i ==amount-1){
+      //   unbindFrameBuffer();
+      // }
+      useShaderProgram(&postProcShader);
+      glUniform1i(glGetUniformLocation(postProcShader.id, "horizontal"), horizontal);
+      glUniform1i(glGetUniformLocation(postProcShader.id, "first"), first);
+      FrameBuffer* fb = first? &frameBuffer :pingpong[!horizontal] ;
+      renderFrameBuffer(fb, camera.width, camera.height, &postProcShader);
+      horizontal = !horizontal;
+      if (first)
+        first = false;
     }
 
-    unbindFrameBuffer(&frameBuffer);
 
-    glClearColor(0.2f, 0.4f, 0.4f, 1.0f);
+    // if (!saved){
+    //   saved = true;
+    //   unsigned char data[3*frameBuffer.width * frameBuffer.height* sizeof(uint)];
+    //   glBindTexture(GL_TEXTURE_2D, frameBuffer.textures[0].glID);
+    //   glPixelStorei(GL_PACK_ALIGNMENT,1);
+    //   glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    //   stbi_flip_vertically_on_write(true);
+    //   int code = stbi_write_jpg("saved.jpg",0, 0, 3,  data,100);
+    //   if (code == 0){
+    //     printf("%d", code);
+    //   }
+    // }
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    renderFrameBuffer(&frameBuffer, camera.width, camera.height);
+    unbindFrameBuffer();
+    // // useShaderProgram(&postProcShader);
+    // // renderFrameBuffer(pingpong[1], camera.width, camera.height, &new);
+
+    useShaderProgram(&combineShaderHDR);
+
+    glBindTextureUnit(0, frameBuffer.textures[0].glID);
+    glBindTextureUnit(1, pingpong[1]->textures[0].glID);
+
+    glUniform1i(glGetUniformLocation(combineShaderHDR.id,"bloomBlur"), 1);
+
+
+    glUniform1f(glGetUniformLocation(combineShaderHDR.id,"exposure"),1);
+
+    renderFrameBuffer(&frameBuffer, camera.width, camera.height, &combineShaderHDR);
+
+    unbindShaderProgram();
 
     glfwPollEvents();
-    pollInput(window);
     glfwSwapBuffers(window);
 
+    framecount++;
 
     // performance tracking
     dt = getDetlaTime();
+    pollInput(window);
     lastTime = glfwGetTime();
 
     if (lastTime - lastFrameUpdate > 0.1) {

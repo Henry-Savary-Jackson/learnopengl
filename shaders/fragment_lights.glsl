@@ -16,7 +16,8 @@ in VS_OUT{
 flat in uint materialIndex;
 flat in uint textureIndexFrag;
 
-out vec4 FragColor;
+layout (location=0) out vec4 FragColor;
+layout (location=1) out vec4 BrightColor;
 
 
 struct Material {
@@ -105,6 +106,8 @@ vec3 getColourLight(  int lightIndex, inout Material material){
         float diffuseCoeff = material.coeffs.y;
         diffuse = clamp(dot( norm , lightDir) ,0, 1)  *lightColour* diffuseCoeff;
     }
+    // float diffuseCoeff = material.coeffs.y;
+    // diffuse = clamp(dot( norm , lightDir) ,0, 1)  *lightColour* diffuseCoeff;
 
     float spec =  clamp(dot(reflect(lightDir,norm), normalize(fragPosCamera)  ),0,1) ;
     vec3 specular = pow(spec,128) * lightColour * specularCoeff;;
@@ -123,8 +126,16 @@ void main()
     vec3 I = normalize(fragPos - cameraPos);
     vec3 R = refract(I, normalize(normal), material.refractionIndex);
     // FragColor = texture(sampler2D(textures[textureIndexFrag]), texPos) ;
-    FragColor = vec4(texture(samplerCube(textures[skyboxCubeMapIndex]), R).rgb, 1) * material.reflectionStrength;
+    FragColor = vec4(texture(samplerCube(textures[skyboxCubeMapIndex]), R).rgb* material.reflectionStrength, 1) ;
     FragColor *= vec4(colour,1) ;
+
+    float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+    if (brightness >= 1){
+        BrightColor = FragColor;
+
+    }else{
+        BrightColor = vec4(0,0,0,0);
+    }
 
 
 }

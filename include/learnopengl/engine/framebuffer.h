@@ -14,18 +14,17 @@ typedef struct {
     uint uvVBO;
     uint width;
     uint height;
-    Texture texture;
+    Texture* textures;
     Sampler sampler;
     RenderBuffer renderBuffer;
-    ShaderProgram * shaderProgram;
+    uint numTextures;
 }FrameBuffer;
 
 void initRenderBuffer(RenderBuffer* renderBuffer, uint attachment);
 void freeRenderBuffer(RenderBuffer* renderBuffer);
 
-void initFrameBuffer(FrameBuffer* framebuffer, uint width, uint height);
-void renderFrameBuffer(FrameBuffer* framebuffer, uint width, uint height);
-void attachShaderProgramToFrameBuffer(FrameBuffer* framebuffer, ShaderProgram* shaderProgram);
+void initFrameBuffer(FrameBuffer* framebuffer, uint numTextures);
+void renderFrameBuffer(FrameBuffer* framebuffer, uint width, uint height, ShaderProgram* shaderProgram);
 void freeFrameBuffer(FrameBuffer *frameBuffer) ;
 void bindFrameBuffer(FrameBuffer* framebuffer, uint width, uint height);
-void unbindFrameBuffer(FrameBuffer* frameBuffer);
+void unbindFrameBuffer();
