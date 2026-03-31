@@ -21,6 +21,8 @@ typedef struct{
     uint height;
     uint depth;
     uint textureType;
+    uint format;
+    uint internalFormat;
 } Texture;
 
 typedef struct {

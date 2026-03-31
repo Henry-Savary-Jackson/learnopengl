@@ -2,7 +2,6 @@
 
 #include "learnopengl/engine/camera.h"
 #include "learnopengl/engine/global_info.h"
-#include "learnopengl/engine/mesh.h"
 #include "learnopengl/engine/object.h"
 #include "learnopengl/engine/shader.h"
 #include "learnopengl/engine/skybox.h"

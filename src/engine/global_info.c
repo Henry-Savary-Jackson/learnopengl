@@ -58,16 +58,16 @@ void getProjectionManagerProjection(ProjectionManager *manager, mat4 dest) {
 }
 
 void addLightsToManager(LightInfoManager *manager, LightSource *lights,
-                        uint numLights, mat4 view) {
+                        uint numLights) {
   if (manager->numLights + numLights >= manager->maxLights)
     return;
   LightData *lightsArrStart = (LightData *)((float *)manager->lights + 4);
-  encodeLights(lights, numLights, view, lightsArrStart + manager->numLights);
+  encodeLights(lights, numLights, lightsArrStart + manager->numLights);
   manager->numLights += numLights;
 }
-void addLightToManager(LightInfoManager *manager, LightSource *lights,
-                       mat4 view) {
-  addLightsToManager(manager, lights, 1, view);
+void addLightToManager(LightInfoManager *manager, LightSource *lights
+                       ) {
+  addLightsToManager(manager, lights, 1 );
 }
 void flushLightManager(LightInfoManager *manager) {
 
@@ -106,6 +106,7 @@ void setProjectionMatrixManager(ProjectionManager *manager, Camera *camera) {
                manager->projectionBuffer->projectionTimesView);
   manager->projectionBuffer->cameraPos = camera->position;
   manager->projectionBuffer->cameraDirection = camera->direction;
+  manager->projectionBuffer->screenSize = (vec2s){camera->width, camera->height};
 }
 
 void bindProjectionManagerShader(ProjectionManager *manager,

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "learnopengl/engine/shader.h"
-#include "learnopengl/engine/skybox.h"
 #include <learnopengl/engine/batch_render.h>
 #include <learnopengl/engine/camera.h>
 #include <learnopengl/engine/object.h>

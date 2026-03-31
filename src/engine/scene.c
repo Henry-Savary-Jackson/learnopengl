@@ -9,7 +9,6 @@
 #include <glad/glad.h>
 #include <learnopengl/engine/render_context.h>
 #include <learnopengl/engine/scene.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 void initScene(Scene *scene, Camera *camera, uint maxShaders, uint maxObjects,
@@ -78,7 +77,7 @@ void addObjectToScene(Scene *scene, GameObject *object, uint objectType) {
 }
 
 void addLightToScene(Scene *scene, LightSource *light, uint objectType) {
-  addObjectToScene(scene, &light->object, objectType);
+  // addObjectToScene(scene, &light->object, objectType);
   scene->lights[scene->numLights] = light;
   scene->numLights++;
 }
@@ -111,7 +110,6 @@ void renderLoop(Scene *scene) {
     renderObjectBatch(&scene->dynamicRenderer, scene->dynamicObjects[i], scene->textureIndicesDynamic[i]);
 
   flush(&scene->dynamicRenderer);
-  // draw(&scene->dynamicRenderer);
 }
 
 void setSkybox(Scene *scene,  Texture *texture,

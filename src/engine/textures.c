@@ -8,13 +8,15 @@
 #include <string.h>
 #include <learnopengl/utils/utils.h>
 
-void initTexture(Texture *texture, const char *name) {
+void initTexture(Texture *texture, const char *name, uint textureType,uint format ,uint internalFormat) {
   texture->name = name;
-  texture->textureType = -1; // UNKNOWN VALUE
+  texture->textureType = textureType; // UNKNOWN VALUE
+  texture->internalFormat = internalFormat;
+  texture->format = format;
+  glCreateTextures(textureType, 1, &(texture->glID));
 }
 
 void loadTexture2D(Texture *texture, const char *path) {
-glCreateTextures(GL_TEXTURE_2D, 1, &(texture->glID));
 texture->textureType = GL_TEXTURE_2D;
 texture->depth =1;
 
@@ -23,10 +25,12 @@ texture->depth =1;
   unsigned char *data =
       stbi_load(path, (int*)&(texture->width), (int*)&(texture->height), &nrChannels, 0);
   if (data) {
-    glTextureStorage2D(texture->glID, 1, nrChannels == 4 ? GL_RGBA8 : GL_RGB8,
+    texture->format = nrChannels == 4 ? GL_RGBA : GL_RGB;
+    texture->internalFormat = nrChannels == 4 ? GL_RGBA8 : GL_RGB8;
+    glTextureStorage2D(texture->glID, 1, texture->internalFormat,
                        texture->width, texture->height);
     glTextureSubImage2D(texture->glID, 0, 0, 0, texture->width, texture->height,
-                        nrChannels == 4 ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE,
+                        texture->format, GL_UNSIGNED_BYTE,
                         data);
 
     stbi_image_free(data);
@@ -36,11 +40,17 @@ texture->depth =1;
   }
 }
 
+void bindTexture(Texture* texture){
+  glBindTexture(texture->textureType, texture->glID);
+}
+
+void unbindTexture(Texture* texture){
+  glBindTexture(texture->textureType, 0);
+}
 
 void loadTextureCubeMap(Texture *texture, const char *path,
                         const char *sides[6]) {
 
-  glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &(texture->glID));
   texture->textureType = GL_TEXTURE_CUBE_MAP;
   texture->depth = 6;
 
@@ -60,10 +70,12 @@ void loadTextureCubeMap(Texture *texture, const char *path,
     unsigned char *data =
         stbi_load((char*)fullpath, (int*)&texture->width, (int*)&texture->height, &nrChannels, 0);
 
+    texture->format = nrChannels == 4 ? GL_RGBA : GL_RGB;
+    texture->internalFormat = nrChannels == 4 ? GL_RGBA8 : GL_RGB8;
     if (i == 0)
-      glTextureStorage2D(texture->glID, 1, nrChannels == 4 ? GL_RGBA8 : GL_RGB8,
+      glTextureStorage2D(texture->glID, 1, texture->internalFormat,
                         texture->width, texture->height);
-    glTextureSubImage3D(texture->glID, 0,0,0,i,texture->width, texture->height, 1  ,nrChannels == 4 ? GL_RGBA : GL_RGB , GL_UNSIGNED_BYTE, data);
+    glTextureSubImage3D(texture->glID, 0,0,0,i,texture->width, texture->height, 1  ,texture->format , GL_UNSIGNED_BYTE, data);
 
   }
 }

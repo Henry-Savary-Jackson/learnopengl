@@ -17,7 +17,7 @@ layout(std140) uniform ViewProjection{
 
 struct LightSource
 {
-    vec4 positionCamera;
+    vec4 position;
     vec4 colour;
     float power;
 };

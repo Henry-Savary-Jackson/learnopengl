@@ -5,6 +5,7 @@
 typedef struct {
   uint id;
   uint type;
+  const char * path;
 } Shader;
 
 typedef struct {
@@ -62,6 +63,12 @@ void unbindShaderProgram();
 
 void attachShadersToProgram(ShaderProgram *program, Shader shaders[],
                             int length);
+
+uint setUniform1f(ShaderProgram* shaderProgram, const char * name, float value);
+uint setUniform1i(ShaderProgram* shaderProgram, const char * name, int value);
+uint setUniform1ui(ShaderProgram *shaderProgram, const char *name, uint value) ;
+uint setUniform3fv(ShaderProgram* shaderProgram, const char * name, float value[3]);
+uint setUniform4fv(ShaderProgram* shaderProgram, const char * name, float value[4] );
 
 void freeShader(Shader *shader);
 void freeShaderProgram(ShaderProgram *shader);

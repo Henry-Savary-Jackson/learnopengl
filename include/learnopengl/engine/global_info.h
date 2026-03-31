@@ -57,9 +57,9 @@ typedef struct {
 void initLightInfoManager(LightInfoManager *manager, uint maxLights);
 void bindLightInfoManager(LightInfoManager *manager, ShaderProgram *shader);
 void addLightsToManager(LightInfoManager *manager, LightSource *lights,
-                        uint numLight, mat4 view);
-void addLightToManager(LightInfoManager *manager, LightSource *lights,
-                       mat4 view);
+                        uint numLight);
+void addLightToManager(LightInfoManager *manager, LightSource *lights)
+                       ;
 void flushLightManager(LightInfoManager *manager);
 void freeLightManager(LightInfoManager *manager);
 

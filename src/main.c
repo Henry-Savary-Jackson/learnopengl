@@ -1,4 +1,3 @@
-#include "learnopengl/engine/framebuffer.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cglm/cam.h>
@@ -15,6 +14,7 @@
 #include <learnopengl/engine/shader.h>
 #include <learnopengl/engine/skybox.h>
 #include <learnopengl/engine/textures.h>
+#include <learnopengl/engine/deferred_light_renderer.h>
 #include <learnopengl/utils/arraylist.h>
 #include <learnopengl/utils/utils.h>
 #include <stdbool.h>
@@ -137,10 +137,10 @@ int main() {
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glfwSetCursorPosCallback(window, mouse_callback);
 
-  ShaderProgram shaderProgram;
-  initShaderProgramFromFiles(&shaderProgram,
-                             "./shaders/vertex_batched_with_lights.glsl",
-                             "./shaders/fragment_lights.glsl");
+  // ShaderProgram shaderProgram;
+  // initShaderProgramFromFiles(&shaderProgram,
+  //                            "./shaders/vertex_batched_with_lights.glsl",
+  //                            "./shaders/fragment_lights.glsl");
 
   ShaderProgram lightShaderProgram;
   initShaderProgramFromFiles(&lightShaderProgram,
@@ -148,34 +148,43 @@ int main() {
                              "./shaders/light_source_fragment.glsl");
 
   ShaderProgram skyboxShader;
-  initShaderProgramFromFiles(&skyboxShader, "./shaders/vertex_skybox.glsl",
+  initShaderProgramFromFiles(&skyboxShader,
+                             "./shaders/vertex_skybox.glsl",
                              "./shaders/fragment_skybox.glsl");
 
-  ShaderProgram postProcShader;
-  initShaderProgramFromFiles(&postProcShader, "./shaders/framebuffer_vs.glsl",
-                             "./shaders/framebuffer_fs.glsl");
+  ShaderProgram gBufferShader;
+  initShaderProgramFromFiles(&gBufferShader,
+                             "./shaders/vertex_batched_with_lights.glsl","./shaders/fragment_deferred.glsl");
 
-  ShaderProgram combineShaderHDR;
-  initShaderProgramFromFiles(&combineShaderHDR, "./shaders/framebuffer_vs.glsl",
-                             "./shaders/framebuffer_fs_combine.glsl");
+  ShaderProgram gBufferGeomShader;
+    initShaderProgramFromFiles(&gBufferGeomShader,
+      "./shaders/vertex_deferred_lighting.glsl","./shaders/fragment_deferred_geom_pass.glsl");
 
 
-  ShaderProgram new;
-  initShaderProgramFromFiles(&new, "./shaders/framebuffer_vs.glsl",
-                             "./shaders/new.glsl");
+  ShaderProgram gBufferLightShader;
+  initShaderProgramFromFiles(&gBufferLightShader,
+                             "./shaders/vertex_deferred_lighting.glsl","./shaders/fragment_deferred_lighting.glsl");
+
+  ShaderProgram gBufferRender;
+  initShaderProgramFromFiles(&gBufferRender,
+                             "./shaders/framebuffer_vs.glsl","./shaders/fragment_deferred_lighting_display_gbuffer.glsl");
+
+
+
+
   Texture texture;
-  initTexture(&texture, "container");
+  initTexture(&texture, "container", GL_TEXTURE_2D, GL_RGB, GL_RGB8);
   loadTexture2D(&texture, "./textures/container.jpg");
 
   Texture skyBoxTexture;
   const char *faces[6] = {"right.jpg",  "left.jpg",  "top.jpg",
                           "bottom.jpg", "front.jpg", "back.jpg"};
 
-  initTexture(&skyBoxTexture, "skybox");
+  initTexture(&skyBoxTexture, "skybox", GL_TEXTURE_CUBE_MAP, GL_RGB, GL_RGB8);
   loadTextureCubeMap(&skyBoxTexture, "./textures/skybox", faces);
 
   Texture normalMapBrickwall;
-  initTexture(&normalMapBrickwall, "brick_normal");
+  initTexture(&normalMapBrickwall, "brick_normal", GL_TEXTURE_2D, GL_RGB,GL_RGB8 );
   loadTexture2D(&normalMapBrickwall, "./textures/brickwall_normal.jpg");
 
   Sampler sampler;
@@ -201,6 +210,9 @@ int main() {
   Mesh meshCube;
   loadModelFromFile("models/cube.obj", &meshCube);
 
+  Mesh sphere;
+  loadModelFromFile("models/sphere.obj", &sphere);
+
   uint numLights = 15;
   float bound = 20;
 
@@ -223,7 +235,7 @@ int main() {
         (vec3s){rand_float(0, 1), rand_float(0, 1), rand_float(0, 1)};
     lights[i].power = rand_float(5000, 7000);
     initGameObject(&lights[i].object);
-    setMeshGameObject(&lights[i].object, &meshCube);
+    setMeshGameObject(&lights[i].object, &sphere);
     setMaterialGameObject(&lights[i].object, &material);
     lights[i].object.position =
         (vec3s){rand_float(-bound, bound), rand_float(-bound, bound),
@@ -236,19 +248,17 @@ int main() {
   Mesh bullMesh;
   loadModelFromFile("models/bull.obj", &bullMesh);
 
-  Mesh dragonMesh;
-  loadModelFromFile("models/bull.obj", &dragonMesh);
 
   srand(10);
   int numObjects = 100;
   GameObject *objects = malloc(numObjects * sizeof(GameObject));
   for (int i = 0; i < numObjects; i++) {
     initGameObject(&objects[i]);
-    // scaleGameObjectFloat(&objects[i], i % 2 ? 0.01 : 0.01);
-    // setMeshGameObject(&objects[i], i % 2 ? &bullMesh : &dragonMesh);
-    scaleGameObjectFloat(&objects[i], 1);
-    setMeshGameObject(&objects[i], &meshCube);
-    setShaderProgramGameObject(&objects[i], &shaderProgram);
+    scaleGameObjectFloat(&objects[i],  0.01);
+    setMeshGameObject(&objects[i],  &bullMesh );
+    // scaleGameObjectFloat(&objects[i], 1);
+    // setMeshGameObject(&objects[i], &meshCube);
+    setShaderProgramGameObject(&objects[i], &gBufferShader);
     setTexturesGameObject(objects + i, &texture, 1);
     setMaterialGameObject(&objects[i], &material);
 
@@ -279,21 +289,15 @@ int main() {
   glCullFace(GL_BACK);
   glfwSwapInterval(0);
 
-  FrameBuffer frameBuffer;
-  initFrameBuffer(&frameBuffer,  2);
 
-  FrameBuffer pingBlurFrameBuffer;
-  initFrameBuffer(&pingBlurFrameBuffer, 1);
-  FrameBuffer pongBlurFrameBuffer;
-  initFrameBuffer(&pongBlurFrameBuffer,  1);
+  const char* names [8]= {"gPos", "gAlbedo", "gNormal", "gTangent", "gBiTangent", "gMaterialIndex", "gNormalMap", "gSpecularMap" };
 
-  FrameBuffer finalFrameBuffer;
-  initFrameBuffer(&finalFrameBuffer,  1);
+  DeferredRenderer deferredRenderer;
+  initDeferredRenderer(&deferredRenderer, names, LENGTH(names),&gBufferGeomShader , &gBufferLightShader);
 
   float lastFrameUpdate = 0;
 
   // bind the manager to send global shader info
-  // glEnable(GL_FRAMEBUFFER_SRGB);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   bool saved = false;
@@ -302,8 +306,9 @@ int main() {
   float dt = 0;
   while (!glfwWindowShouldClose(window)) {
     float startTime = glfwGetTime();
-
-    bindFrameBuffer(&frameBuffer, camera.width, camera.height);
+    uint width = camera.width;
+    uint height = camera.height;
+    glViewport(0, 0, width, height);
 
     glClearColor(0.0f, 0.0f, 0, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -315,65 +320,14 @@ int main() {
                    objects[i].rotation.raw);
     }
 
-    // for (int i = 0; i < numLights; i++) {
-    //   rotateGameObjectAround(&(lights[i].object), 1.f * dt, (vec3){0, 2, 1},
-    //                          (vec3){4, 2, 3});
-    // }
-
-    // -- CALL TO RENDER --
-    renderLoop(&scene);
-
-
-    bool horizontal = true;
-    bool first = true;
-    int amount =4;
-    FrameBuffer* pingpong[2] = {&pingBlurFrameBuffer, &pongBlurFrameBuffer};
-    for (int i =0; i < amount; i++){
-      bindFrameBuffer(pingpong[horizontal], camera.width, camera.height);
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      // if (i ==amount-1){
-      //   unbindFrameBuffer();
-      // }
-      useShaderProgram(&postProcShader);
-      glUniform1i(glGetUniformLocation(postProcShader.id, "horizontal"), horizontal);
-      glUniform1i(glGetUniformLocation(postProcShader.id, "first"), first);
-      FrameBuffer* fb = first? &frameBuffer :pingpong[!horizontal] ;
-      renderFrameBuffer(fb, camera.width, camera.height, &postProcShader);
-      horizontal = !horizontal;
-      if (first)
-        first = false;
+    for (int i = 0; i < numLights; i++) {
+      rotateGameObjectAround(&(lights[i].object), 1.f * dt, (vec3){0, 2, 1},
+                             (vec3){4, 2, 3});
     }
 
-
-    // if (!saved){
-    //   saved = true;
-    //   unsigned char data[3*frameBuffer.width * frameBuffer.height* sizeof(uint)];
-    //   glBindTexture(GL_TEXTURE_2D, frameBuffer.textures[0].glID);
-    //   glPixelStorei(GL_PACK_ALIGNMENT,1);
-    //   glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    //   stbi_flip_vertically_on_write(true);
-    //   int code = stbi_write_jpg("saved.jpg",0, 0, 3,  data,100);
-    //   if (code == 0){
-    //     printf("%d", code);
-    //   }
-    // }
-
-
-    unbindFrameBuffer();
-    // // useShaderProgram(&postProcShader);
-    // // renderFrameBuffer(pingpong[1], camera.width, camera.height, &new);
-
-    useShaderProgram(&combineShaderHDR);
-
-    glBindTextureUnit(0, frameBuffer.textures[0].glID);
-    glBindTextureUnit(1, pingpong[1]->textures[0].glID);
-
-    glUniform1i(glGetUniformLocation(combineShaderHDR.id,"bloomBlur"), 1);
-
-
-    glUniform1f(glGetUniformLocation(combineShaderHDR.id,"exposure"),1);
-
-    renderFrameBuffer(&frameBuffer, camera.width, camera.height, &combineShaderHDR);
+    // -- CALL TO RENDER --
+    renderDeferred(&deferredRenderer, &scene, &gBufferRender);
+    // renderLoop(&scene);
 
     unbindShaderProgram();
 
@@ -402,11 +356,11 @@ int main() {
   freeScene(&scene);
   free(objects);
   freeTexture(&texture);
-  freeShaderProgram(&shaderProgram);
+  freeShaderProgram(&gBufferShader);
   freeShaderProgram(&lightShaderProgram);
   freeMesh(&meshCube);
   freeMesh(&bullMesh);
-  freeMesh(&dragonMesh);
+  // freeMesh(&dragonMesh);
   freeSampler(&sampler);
 
   glfwTerminate();

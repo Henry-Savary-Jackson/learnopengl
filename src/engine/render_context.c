@@ -21,10 +21,9 @@ void updateContext(RenderingContext* context){
 }
 
 void addLightToContext(RenderingContext* context, LightSource* light ){
-    mat4 view;
-    getViewMatrix(context->camera, view);
-    addLightToManager(&context->lightManager, light, view);
+    addLightToManager(&context->lightManager, light);
 }
+
 void addObjectToContext(RenderingContext *context, GameObject *object){
     addMaterialToManager(&context->materialManager, object->material, &context->textureManager);
 }

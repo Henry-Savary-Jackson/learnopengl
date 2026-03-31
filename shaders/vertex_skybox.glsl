@@ -11,6 +11,7 @@ layout(std140) uniform ViewProjection{
     mat4 projectionTimesView;
     vec3 cameraPos;
     vec3 cameraDirection;
+    vec2 screenSize;
 };
 
 

@@ -5,19 +5,16 @@ layout (bindless_sampler) uniform;
 in VS_OUT{
  vec2 texPos ;
  vec3 normal;
- vec3 normalCamera;
- vec3 fragPosCamera;
  vec3 fragPos;
  vec3 tangent;
  vec3 bitangent;
- vec3 N;
 };
 
 flat in uint materialIndex;
 flat in uint textureIndexFrag;
 
 layout (location=0) out vec4 FragColor;
-layout (location=1) out vec4 BrightColor;
+// layout (location=1) out vec4 BrightColor;
 
 
 struct Material {
@@ -33,7 +30,7 @@ uniform uint skyboxCubeMapIndex;
 
 struct LightSource
 {
-    vec4 positionCamera;
+    vec4 position;
     vec4 colour;
     float power;
 };
@@ -62,9 +59,9 @@ layout(std140) uniform ViewProjection{
 vec3 getDiffuseFromNormalMap( int lightIndex, inout Material material){
     LightSource light = lightData[lightIndex];
 
-    mat3 TBN = transpose(mat3(tangent,bitangent,N));
+    mat3 TBN = transpose(mat3(tangent,bitangent,normal));
 
-    vec3 lightPosTangent = TBN * light.positionCamera.xyz;
+    vec3 lightPosTangent = TBN * light.position.xyz;
     vec3 fragPosCameraTangent = TBN * fragPosCamera;
 
     vec3 lightFragDiff = lightPosTangent-fragPosCameraTangent;
@@ -89,9 +86,9 @@ vec3 getColourLight(  int lightIndex, inout Material material){
     // vec3 materialColour = vec3(1,1,1);
 
     float power = light.power;
-    vec3 lightPosCamera = light.positionCamera.xyz;
+    vec3 lightPos = light.position.xyz;
 
-    vec3 lightFragDiff = lightPosCamera-fragPosCamera;
+    vec3 lightFragDiff = lightPos-fragPos;
     float intensity = 1/pow(length(lightFragDiff),2);
 
     float specularCoeff = material.coeffs.z;
@@ -129,13 +126,14 @@ void main()
     FragColor = vec4(texture(samplerCube(textures[skyboxCubeMapIndex]), R).rgb* material.reflectionStrength, 1) ;
     FragColor *= vec4(colour,1) ;
 
-    float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-    if (brightness >= 1){
-        BrightColor = FragColor;
+    // float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+    // if (brightness >= 1){
+    //     BrightColor = FragColor;
 
-    }else{
-        BrightColor = vec4(0,0,0,0);
-    }
+    // }else{
+    //     BrightColor = vec4(0,0,0,0);
+    // }
+
 
 
 }

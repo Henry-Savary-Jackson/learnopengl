@@ -2,7 +2,8 @@
 #include <glad/glad.h>
 #include <learnopengl/engine/framebuffer.h>
 #include <learnopengl/engine/shader.h>
-#include <stdio.h>
+#include <learnopengl/utils/stb_image_write.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -20,13 +21,13 @@ void freeRenderBuffer(RenderBuffer *renderBuffer) {
 }
 
 void initFrameBuffer(FrameBuffer *framebuffer,
-                     uint numTextures) {
+                     uint numTextures, Texture** textures) {
 
   glGenFramebuffers(1, &(framebuffer->glID));
   framebuffer->width = 0;
   framebuffer->height = 0;
   framebuffer->numTextures = numTextures;
-  framebuffer->textures = malloc(sizeof(Texture) * numTextures);
+  framebuffer->textures = textures;
   initRenderBuffer(&(framebuffer->renderBuffer), GL_DEPTH24_STENCIL8);
 
   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->glID);
@@ -34,16 +35,13 @@ void initFrameBuffer(FrameBuffer *framebuffer,
 
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
                             GL_RENDERBUFFER, framebuffer->renderBuffer.glID);
+  glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->glID);
 
   uint attachments[numTextures];
   for (int i = 0; i < numTextures; i++) {
-    initTexture(&framebuffer->textures[i], "lol");
-    glGenTextures(1, &framebuffer->textures[i].glID);
-    glBindTexture(GL_TEXTURE_2D, framebuffer->textures[i].glID);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glBindTexture(GL_TEXTURE_2D, framebuffer->textures[i]->glID);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i,
-                           GL_TEXTURE_2D, framebuffer->textures[i].glID, 0);
+                           GL_TEXTURE_2D, framebuffer->textures[i]->glID, 0);
     attachments[i] = GL_COLOR_ATTACHMENT0 + i;
   }
   glDrawBuffers(numTextures, attachments);
@@ -90,8 +88,13 @@ void bindFrameBuffer(FrameBuffer *framebuffer, uint width, uint height) {
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
   for (int i = 0; i < framebuffer->numTextures; i++) {
-    glBindTexture(GL_TEXTURE_2D, framebuffer->textures[i].glID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
+    glBindTexture(GL_TEXTURE_2D, framebuffer->textures[i]->glID);
+    framebuffer->textures[i]->width = width;
+    framebuffer->textures[i]->height = height;
+    uint format = framebuffer->textures[i]->format ;
+    uint internalFormat = framebuffer->textures[i]->internalFormat ;
+
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format,
                  GL_UNSIGNED_BYTE, NULL);
   }
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -105,21 +108,34 @@ void unbindFrameBuffer() {
 
 const static char *uniformPrefix = "image";
 
+static bool done = false;
+
 void renderFrameBuffer(FrameBuffer *framebuffer, uint width, uint height,
-                        ShaderProgram *shaderProgram) {
+                        ShaderProgram *shaderProgram,  const char ** names) {
 
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
   useShaderProgram(shaderProgram);
+    Texture t ;
+    initTexture(&t, "test", GL_TEXTURE_2D, GL_RGB, GL_RGB8);
+    loadTexture2D(&t, "./textures/container.jpg");
 
-  char uniformName[strlen(uniformPrefix) + 3];
+  // char uniformName[strlen(uniformPrefix) + 3];
   for (int i = 0; i < framebuffer->numTextures; i++) {
-    snprintf(uniformName, sizeof(uniformName), "image%d", i);
-    glBindTextureUnit(i+5, framebuffer->textures[i].glID);
-    uint location = glGetUniformLocation(shaderProgram->id, uniformName);
-    if (location != GL_INVALID_INDEX)
-      glUniform1i(location, i+5);
+    // snprintf(uniformName, sizeof(uniformName), "image%d", i);
+    glBindTextureUnit(i+1, t.glID);
 
+    // if (!done  && i == 1){
+    //   done = true;
+    //   uint t_id = t.glID;
+    //   glBindTexture(GL_TEXTURE_2D, t_id );
+    //   unsigned char data [4*framebuffer->width * framebuffer->height];
+
+    //   glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    //   glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    //   stbi_write_bmp("test.jpg", framebuffer->width,framebuffer->height, 3, data);
+    // }
+    setUniform1i(shaderProgram, names[i], i+1);
   }
 
   glBindVertexArray(framebuffer->vao);
@@ -136,7 +152,7 @@ void freeFrameBuffer(FrameBuffer *frameBuffer) {
   glDeleteBuffers(1, &frameBuffer->quadVBO);
   glDeleteBuffers(1, &frameBuffer->uvVBO);
   for (int i = 0; i < frameBuffer->numTextures; i++) {
-    freeTexture(&frameBuffer->textures[i]);
+    freeTexture(frameBuffer->textures[i]);
   }
   if (frameBuffer->textures)
     free(frameBuffer->textures);
