@@ -10,7 +10,7 @@
 
 static const uint MAX_MESHES = 16;
 
-#define ATTR_LOCATION_LIGHT_INDEX 15
+#define ATTR_LOCATION_LIGHT_INDEX 16
 
 typedef  struct{
     uint vao;

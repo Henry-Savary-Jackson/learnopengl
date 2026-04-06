@@ -4,14 +4,14 @@ layout (bindless_sampler) uniform;
 
 
 
-uniform uint gPos;
-uniform uint gNormal;
-uniform uint gAlbedo;
-uniform uint gTangent;
-uniform uint gBiTangent;
-uniform uint gNormalMap;
-uniform uint gSpecularMap;
-uniform uint gMaterialIndex;
+uniform sampler2D gPos;
+uniform sampler2D gNormal;
+uniform sampler2D gAlbedo;
+uniform sampler2D gTangent;
+uniform sampler2D gBiTangent;
+uniform sampler2D gNormalMap;
+uniform sampler2D gSpecularMap;
+uniform usampler2D gMaterialIndex;
 
 layout (location= 0) out vec4 FragColor;
 
@@ -60,10 +60,10 @@ layout (std140) uniform Materials{
 
 vec3 getDiffuseFromNormalMap( inout LightSource light, inout Material material, vec2 texPos){
 
-    vec3 tangent = texture(sampler2D(textures[gTangent]), texPos ).rgb;
-    vec3 bitangent = texture(sampler2D(textures[gBiTangent]), texPos ).rgb;
-    vec3 normal = texture(sampler2D(textures[gNormal]), texPos ).rgb;
-    vec3 fragPos = texture(sampler2D(textures[gPos]), texPos ).rgb;
+    vec3 tangent = texture(gTangent, texPos ).rgb;
+    vec3 bitangent = texture(gBiTangent, texPos ).rgb;
+    vec3 normal = texture(gNormal, texPos ).rgb;
+    vec3 fragPos = texture(gPos, texPos ).rgb;
 
     mat3 TBN = transpose(mat3(tangent,bitangent,normal));
 
@@ -81,11 +81,16 @@ vec3 getDiffuseFromNormalMap( inout LightSource light, inout Material material, 
 
 // get the contribution of one point light to the pixel
 vec3 getColourLight(  inout LightSource light, inout Material material, vec2 texPos){
+
+    const float constTerm = 1;
+    const float linearTerm= 0.7;
+    const float quadTerm  = 1.8;
+
     vec3 lightColour = light.colour.rgb;
     float ambientCoeff = material.coeffs.x;
 
-    vec3 fragPos = texture(sampler2D(textures[gPos]), texPos ).rgb;
-    vec3 normal = texture(sampler2D(textures[gNormal]), texPos ).rgb;
+    vec3 fragPos = texture(gPos, texPos ).rgb;
+    vec3 normal = texture(gNormal, texPos ).rgb;
 
     vec3 ambient =   lightColour  * ambientCoeff;
     vec3 materialColour = material.colour.rgb;
@@ -94,7 +99,9 @@ vec3 getColourLight(  inout LightSource light, inout Material material, vec2 tex
     vec3 lightPos = light.position.xyz;
 
     vec3 lightFragDiff = lightPos-fragPos;
-    float intensity = power/pow(length(lightFragDiff),2);
+    float r = length(lightFragDiff);
+
+    float intensity = power/(pow(r,2)* quadTerm + r * linearTerm + constTerm);
 
     float specularCoeff = material.coeffs.z;
 
@@ -119,14 +126,15 @@ void main()
 
     vec2 texCoord = calcTexCoord();
 
-    uint materialIndex = texture(usampler2D(textures[gMaterialIndex]),texCoord).r;
+    uint materialIndex = texture(gMaterialIndex,texCoord).r;
     Material material = materials[materialIndex];
+     vec3 bitangent = texture(gBiTangent, texCoord ).rgb;
     LightSource light = lightData[currentLightIndex];
-    vec3 normal = texture(sampler2D(textures[gNormal]), texCoord).rgb;
-    vec3 fragPos = texture(sampler2D(textures[gPos]), texCoord).rgb;
+    vec3 normal = texture(gNormal, texCoord).rgb;
+    vec3 fragPos = texture(gPos, texCoord).rgb;
     vec3 I = normalize(fragPos - cameraPos);
     vec3 R = refract(I, normal, material.refractionIndex);
     vec3 skyboxPixel  = texture(samplerCube(textures[skyboxCubeMapIndex]), R).rgb;
     vec3 colour = getColourLight(light, material, texCoord);
-    FragColor =  vec4(skyboxPixel*colour, 1);
+    FragColor =  vec4(colour*skyboxPixel, 1);
 }

@@ -54,6 +54,7 @@ layout(std140) uniform ViewProjection{
     mat4 projectionTimesView;
     vec3 cameraPos;
     vec3 cameraDirection;
+    vec2 screenSize;
 };
 
 vec3 getDiffuseFromNormalMap( int lightIndex, inout Material material){
@@ -62,9 +63,9 @@ vec3 getDiffuseFromNormalMap( int lightIndex, inout Material material){
     mat3 TBN = transpose(mat3(tangent,bitangent,normal));
 
     vec3 lightPosTangent = TBN * light.position.xyz;
-    vec3 fragPosCameraTangent = TBN * fragPosCamera;
+    vec3 fragPosTangent = TBN * fragPos;
 
-    vec3 lightFragDiff = lightPosTangent-fragPosCameraTangent;
+    vec3 lightFragDiff = lightPosTangent-fragPosTangent;
 
     float diffuseCoeff = material.coeffs.y;
 
@@ -94,7 +95,7 @@ vec3 getColourLight(  int lightIndex, inout Material material){
     float specularCoeff = material.coeffs.z;
 
     vec3 lightDir = normalize( lightFragDiff );
-    vec3 norm = normalize(normalCamera);
+    vec3 norm = normalize(normal);
     vec3 diffuse = vec3(0,0,0);
 
     if (material.normalMapIndex != -1){
@@ -106,7 +107,7 @@ vec3 getColourLight(  int lightIndex, inout Material material){
     // float diffuseCoeff = material.coeffs.y;
     // diffuse = clamp(dot( norm , lightDir) ,0, 1)  *lightColour* diffuseCoeff;
 
-    float spec =  clamp(dot(reflect(lightDir,norm), normalize(fragPosCamera)  ),0,1) ;
+    float spec =  clamp(dot(reflect(lightDir,norm), normalize(fragPos)  ),0,1) ;
     vec3 specular = pow(spec,128) * lightColour * specularCoeff;;
 
     vec3 colour =  ambient + (diffuse +specular)*materialColour*intensity ;

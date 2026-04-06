@@ -4,7 +4,7 @@
 
 #define TEXTURE_UNDEFINED_INDEX -1
 
-void initTexture(Texture *texture, const char *name, uint textureType, uint format, uint internalFormat);
+void initTexture(Texture *texture, const char *name, uint textureType, uint format, uint internalFormat, uint datatype);
 
 void loadTexture2D(Texture *texture, const char *path);
 

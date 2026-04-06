@@ -23,6 +23,7 @@ typedef struct{
     uint textureType;
     uint format;
     uint internalFormat;
+    uint datatype;
 } Texture;
 
 typedef struct {

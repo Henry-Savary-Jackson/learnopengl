@@ -4,7 +4,6 @@ layout (bindless_sampler) uniform;
 
 in vec3 aPos;
 in mat4 aModel;
-layout (location = 15 ) in uint lightIndex;
 
 flat out uint currentLightIndex;
 
@@ -19,6 +18,6 @@ layout(std140) uniform ViewProjection{
 
 void main()
 {
-    currentLightIndex = lightIndex;
-    gl_Position = projectionTimesView * aModel  * vec4(aPos, 1.0);
+    currentLightIndex = gl_InstanceID;
+    gl_Position = projectionTimesView * aModel * vec4(aPos, 1.0);
 }

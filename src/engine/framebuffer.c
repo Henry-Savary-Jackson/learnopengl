@@ -35,20 +35,17 @@ void initFrameBuffer(FrameBuffer *framebuffer,
 
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
                             GL_RENDERBUFFER, framebuffer->renderBuffer.glID);
-  glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->glID);
 
-  uint attachments[numTextures];
-  for (int i = 0; i < numTextures; i++) {
-    glBindTexture(GL_TEXTURE_2D, framebuffer->textures[i]->glID);
+
+  uint attachments[framebuffer->numTextures];
+  for (int i =0; i <framebuffer->numTextures; i++) {
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i,
                            GL_TEXTURE_2D, framebuffer->textures[i]->glID, 0);
     attachments[i] = GL_COLOR_ATTACHMENT0 + i;
   }
-  glDrawBuffers(numTextures, attachments);
-
-  glBindTexture(GL_TEXTURE_2D, 0);
-
+  glDrawBuffers(framebuffer->numTextures, attachments);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
   glGenVertexArrays(1, &framebuffer->vao);
   glGenBuffers(1, &framebuffer->quadVBO);
@@ -83,6 +80,10 @@ void bindFrameBuffer(FrameBuffer *framebuffer, uint width, uint height) {
   framebuffer->width = width;
   framebuffer->height = height;
 
+  glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->glID);
+
+  glBindTexture(GL_TEXTURE_2D, 0);
+
   glBindRenderbuffer(GL_RENDERBUFFER, framebuffer->renderBuffer.glID);
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
@@ -92,10 +93,11 @@ void bindFrameBuffer(FrameBuffer *framebuffer, uint width, uint height) {
     framebuffer->textures[i]->width = width;
     framebuffer->textures[i]->height = height;
     uint format = framebuffer->textures[i]->format ;
-    uint internalFormat = framebuffer->textures[i]->internalFormat ;
+    uint internalFormat = framebuffer->textures[i]->internalFormat;
+    uint datatype = framebuffer->textures[i]->datatype;
 
     glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format,
-                 GL_UNSIGNED_BYTE, NULL);
+                 datatype, NULL);
   }
   glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -116,25 +118,17 @@ void renderFrameBuffer(FrameBuffer *framebuffer, uint width, uint height,
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
   useShaderProgram(shaderProgram);
-    Texture t ;
-    initTexture(&t, "test", GL_TEXTURE_2D, GL_RGB, GL_RGB8);
-    loadTexture2D(&t, "./textures/container.jpg");
+    // Texture t ;
+    // initTexture(&t, "test", GL_TEXTURE_2D, GL_RGB, GL_RGB8);
+    // loadTexture2D(&t, "./textures/container.jpg");
 
   // char uniformName[strlen(uniformPrefix) + 3];
   for (int i = 0; i < framebuffer->numTextures; i++) {
+    // int t_id ;
+    // glGetNamedFramebufferAttachmentParameteriv(framebuffer->glID,GL_COLOR_ATTACHMENT0+i, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME,&t_id );
+    // assert(t_id == framebuffer->textures[i]->glID);
     // snprintf(uniformName, sizeof(uniformName), "image%d", i);
-    glBindTextureUnit(i+1, t.glID);
-
-    // if (!done  && i == 1){
-    //   done = true;
-    //   uint t_id = t.glID;
-    //   glBindTexture(GL_TEXTURE_2D, t_id );
-    //   unsigned char data [4*framebuffer->width * framebuffer->height];
-
-    //   glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    //   glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    //   stbi_write_bmp("test.jpg", framebuffer->width,framebuffer->height, 3, data);
-    // }
+    glBindTextureUnit(i+1, framebuffer->textures[i]->glID);
     setUniform1i(shaderProgram, names[i], i+1);
   }
 

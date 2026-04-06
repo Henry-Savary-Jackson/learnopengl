@@ -173,18 +173,18 @@ int main() {
 
 
   Texture texture;
-  initTexture(&texture, "container", GL_TEXTURE_2D, GL_RGB, GL_RGB8);
+  initTexture(&texture, "container", GL_TEXTURE_2D, GL_RGB, GL_RGB8, GL_UNSIGNED_BYTE);
   loadTexture2D(&texture, "./textures/container.jpg");
 
   Texture skyBoxTexture;
   const char *faces[6] = {"right.jpg",  "left.jpg",  "top.jpg",
                           "bottom.jpg", "front.jpg", "back.jpg"};
 
-  initTexture(&skyBoxTexture, "skybox", GL_TEXTURE_CUBE_MAP, GL_RGB, GL_RGB8);
+  initTexture(&skyBoxTexture, "skybox", GL_TEXTURE_CUBE_MAP, GL_RGB, GL_RGB8, GL_UNSIGNED_BYTE);
   loadTextureCubeMap(&skyBoxTexture, "./textures/skybox", faces);
 
   Texture normalMapBrickwall;
-  initTexture(&normalMapBrickwall, "brick_normal", GL_TEXTURE_2D, GL_RGB,GL_RGB8 );
+  initTexture(&normalMapBrickwall, "brick_normal", GL_TEXTURE_2D, GL_RGB,GL_RGB8, GL_UNSIGNED_BYTE );
   loadTexture2D(&normalMapBrickwall, "./textures/brickwall_normal.jpg");
 
   Sampler sampler;
@@ -233,7 +233,7 @@ int main() {
   for (int i = 0; i < numLights; i++) {
     lights[i].colour =
         (vec3s){rand_float(0, 1), rand_float(0, 1), rand_float(0, 1)};
-    lights[i].power = rand_float(5000, 7000);
+    lights[i].power = rand_float(1,3 );
     initGameObject(&lights[i].object);
     setMeshGameObject(&lights[i].object, &sphere);
     setMaterialGameObject(&lights[i].object, &material);
@@ -243,6 +243,8 @@ int main() {
     setShaderProgramGameObject(&lights[i].object, &lightShaderProgram);
     addLightToScene(&scene, &lights[i], DYNAMIC_OBJ);
     setSampler(&lights[i].object, &sampler);
+    scaleGameObjectFloat(&lights[i].object,
+                         getLightRadius(&lights[i]));
   }
 
   Mesh bullMesh;
@@ -298,8 +300,8 @@ int main() {
   float lastFrameUpdate = 0;
 
   // bind the manager to send global shader info
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  // glEnable(GL_BLEND);
+  // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   bool saved = false;
   preLoop(&scene);
 
@@ -310,7 +312,7 @@ int main() {
     uint height = camera.height;
     glViewport(0, 0, width, height);
 
-    glClearColor(0.0f, 0.0f, 0, 0.0f);
+    glClearColor(0.0f, 0.2f, 0.2f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // -- GAME LOGIC --

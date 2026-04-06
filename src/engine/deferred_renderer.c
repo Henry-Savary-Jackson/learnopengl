@@ -1,4 +1,5 @@
 #include "learnopengl/engine/batch_render.h"
+#include "learnopengl/engine/camera.h"
 #include "learnopengl/engine/framebuffer.h"
 #include "learnopengl/engine/global_info.h"
 #include "learnopengl/engine/light.h"
@@ -8,6 +9,7 @@
 #include "learnopengl/engine/scene.h"
 #include "learnopengl/engine/shader.h"
 #include "learnopengl/engine/textures.h"
+#include <cglm/mat4.h>
 #include <glad/glad.h>
 #include <learnopengl/engine/deferred_light_renderer.h>
 #include <stddef.h>
@@ -27,7 +29,6 @@ void initDeferredLightRenderer(DeferredLightRenderer *renderer,
   renderer->vertexBuffer =
       malloc((sizeof(Vertex) * 1000) * maxLights);
   renderer->transformBuffer = malloc(sizeof(mat4) * maxLights);
-  renderer->lightIndexBuffer = malloc(sizeof(uint) * maxLights);
   renderer->eboBuffer = malloc((sizeof(uint) * 1000) * maxLights);
 
   renderer->numLights = 0;
@@ -81,17 +82,11 @@ void setUpBuffersDeferred(DeferredLightRenderer *renderer) {
 
   glEnableVertexAttribArray(ATTR_LOCATION_POS); // vertex position attr
 
-  glBindBuffer(GL_ARRAY_BUFFER, renderer->lightIndexVBO);
-  glVertexAttribPointer(ATTR_LOCATION_LIGHT_INDEX, 1, GL_UNSIGNED_INT, GL_FALSE,
-                        sizeof(uint), (void *)0);
-
-  glEnableVertexAttribArray(ATTR_LOCATION_LIGHT_INDEX); // vertex position attr
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void setLights(DeferredLightRenderer *renderer, LightSource **lightSource,
                uint numLights, Mesh *mesh) {
-  // TODO add check if exceeds maxLights etc....
-  // check if mesh exists
   renderer->meshes[0] = *mesh;
   renderer->numElements = mesh->numElements;
   renderer->numVertices = mesh->numVertices;
@@ -101,12 +96,7 @@ void setLights(DeferredLightRenderer *renderer, LightSource **lightSource,
          sizeof(Vertex) * mesh->numVertices);
   memcpy(renderer->lights, lightSource, numLights * sizeof(LightSource **));
   for (int i = 0; i < numLights; i++) {
-    scaleGameObjectFloat(&lightSource[i]->object,
-                         getLightRadius(lightSource[i]));
-    mat4 *p_Transforms =
-        (void *)renderer->vertexBuffer + sizeof(Vertex) * renderer->maxVertices;
-    getModelMatrix(&lightSource[i]->object, p_Transforms[renderer->numLights]);
-    renderer->lightIndexBuffer[i] = i;
+    getModelMatrix(&renderer->lights[i]->object,renderer->transformBuffer[i]);
   }
   renderer->numLights = numLights;
 }
@@ -118,9 +108,6 @@ void sendLightData(DeferredLightRenderer *renderer) {
   glNamedBufferData(renderer->transformVBO,
                     renderer->numLights * sizeof(mat4) ,
                     renderer->transformBuffer, GL_STATIC_DRAW);
-  glNamedBufferData(renderer->lightIndexVBO,
-                    renderer->numLights * sizeof(uint) ,
-                    renderer->lightIndexBuffer, GL_STATIC_DRAW);
   glNamedBufferData(renderer->vertexEBO, renderer->numElements * sizeof(uint),
                     renderer->eboBuffer, GL_STATIC_DRAW);
 }
@@ -153,11 +140,13 @@ void initDeferredRenderer(DeferredRenderer *renderer,
   for (int i = 0; i < numGBufferTextures; i++) {
     renderer->gBufferTextures[i] = malloc(sizeof(Texture));
     initTexture(renderer->gBufferTextures[i], gBufferTextureNames[i],
-                GL_TEXTURE_2D, GL_RGB, GL_RGB8);
+                GL_TEXTURE_2D, GL_RGB, GL_RGB32F, GL_FLOAT);
+    setTextureParameter(renderer->gBufferTextures[i], GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    setTextureParameter(renderer->gBufferTextures[i], GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   }
-  // index of material index, store only in there
+  // // index of material index, store only in there
   initTexture(renderer->gBufferTextures[5], gBufferTextureNames[5],
-              GL_TEXTURE_2D, GL_RED, GL_R8);
+              GL_TEXTURE_2D, GL_RED, GL_R8, GL_UNSIGNED_BYTE);
 
   initFrameBuffer(&renderer->gBuffer, numGBufferTextures,
                   renderer->gBufferTextures);
@@ -178,70 +167,77 @@ void renderDeferred(DeferredRenderer *renderer, Scene *scene, ShaderProgram* sha
   bindFrameBuffer(&renderer->gBuffer, scene->camera->width,
                   scene->camera->height);
 
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
   renderLoop(scene);
+  uint width = scene->camera->width; uint height= scene->camera->height;
 
-  unbindFrameBuffer();
 
-  renderFrameBuffer(&renderer->gBuffer , scene->camera->width, scene->camera->height,shaderProgram , renderer->gBufferTextureNames);
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, renderer->gBuffer.glID);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  glBlitFramebuffer(0,0,width, height, 0,0, width, height, GL_DEPTH_BUFFER_BIT,GL_NEAREST );
+
+  // renderFrameBuffer(&renderer->gBuffer , scene->camera->width, scene->camera->height,shaderProgram , renderer->gBufferTextureNames);
 //   // draw everything to screen now
 
 //   // first pass determines values in stencil buffer
 
-//   setLights(&renderer->lightVolumeRenderer, scene->lights, scene->numLights,
-//             scene->lights[0]->object.mesh);
+  setLights(&renderer->lightVolumeRenderer, scene->lights, scene->numLights,
+            scene->lights[0]->object.mesh);
 
-//   sendLightData(&renderer->lightVolumeRenderer);
+  sendLightData(&renderer->lightVolumeRenderer);
 
-//   glDepthMask(
-//       GL_FALSE); // disable writing to z-buffer when rendering light volumes
-//   glDisable(GL_CULL_FACE); // render both size of object so we can run both
-//                            // stencil funcs at once
-//   glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-//   glClear(GL_STENCIL_BUFFER_BIT); // reset stencil to zero everywhere
+  glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+  glDepthMask(GL_FALSE);
+  glClear(GL_STENCIL_BUFFER_BIT); // reset stencil to zero everywhere
 
-//   useShaderProgram(renderer->shaderProgramGeom);
+  useShaderProgram(renderer->shaderProgramGeom);
 
-//   attachContextToShader(&scene->renderingContext, renderer->shaderProgramGeom);
+  attachContextToShader(&scene->renderingContext, renderer->shaderProgramGeom);
 
-//   // We need the stencil test to be enabled but we want it
+// //   // We need the stencil test to be enabled but we want it
 //   // to succeed always. Only the depth test matters.
-//   glStencilFunc(GL_ALWAYS, 0, 0);
+  glEnable(GL_STENCIL_TEST);
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
+  glStencilFuncSeparate(GL_FRONT,GL_ALWAYS, 0, 0);
+  glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR, GL_KEEP);
 
-//   glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
-//   glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP);
 
-//   renderAllLights(&renderer->lightVolumeRenderer);
+  renderAllLights(&renderer->lightVolumeRenderer);
 
-//   // second pass, now only perform lighting calculations on fragments whose
-//   // stencil value is not zero the lighting caclulations are now done batched
-//   // and in parallel on the GPU and only on pixels that matter
-//   useShaderProgram(renderer->shaderProgramLighting);
-//   attachContextToShader(&scene->renderingContext, renderer->shaderProgramLighting);
+// // //   // second pass, now only perform lighting calculations on fragments whose
+// // //   // stencil value is not zero the lighting caclulations are now done batched
+// // //   // and in parallel on the GPU and only on pixels that matter
+  useShaderProgram(renderer->shaderProgramLighting);
+  attachContextToShader(&scene->renderingContext, renderer->shaderProgramLighting);
 
-//   // additive blending on each light's contribution
-//   glEnable(GL_BLEND);
-//   glBlendFunc(GL_ONE, GL_ONE);
-//   glBlendEquation(GL_FUNC_ADD);
+// //   // additive blending on each light's contribution
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
-//   glStencilFunc(GL_NOTEQUAL, 0, 0xff);
-//   for (int i = 0; i < renderer->numGBufferTextures; i++) {
-//     Texture * t  =renderer->gBufferTextures[i];
-//     uint index = addTexture(&scene->renderingContext.textureManager,
-//                             t,&renderer->sampler);
-//     setUniform1ui(renderer->shaderProgramLighting,
-//                  renderer->gBufferTextureNames[i], index);
+  glDisable(GL_BLEND);
+  // glBlendFunc(GL_ONE, GL_ONE);
+  // glBlendEquation(GL_FUNC_ADD);
+  glDepthFunc(GL_GREATER);
 
-//   }
-//   updateContext(&scene->renderingContext);
+  glCullFace(GL_FRONT);
 
-//   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-//   glClear(GL_COLOR_BUFFER_BIT); // reset stencil to zero everywhere
+  glStencilFunc(GL_EQUAL, 0, 0xff);
+  glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-//   // final pass
-//   renderAllLights(&renderer->lightVolumeRenderer);
+  for (int i = 0; i < renderer->numGBufferTextures; i++) {
+    glBindTextureUnit(i+1, renderer->gBufferTextures[i]->glID);
+    setUniform1i(renderer->shaderProgramLighting,
+                 renderer->gBufferTextureNames[i], i+1);
+  }
 
-//   // re-enable defaults
-//   glEnable(GL_CULL_FACE);
-//   glCullFace(GL_BACK);
-//   glDepthMask(GL_TRUE);
+  // final pass
+  renderAllLights(&renderer->lightVolumeRenderer);
+
+  // glClear(GL_COLOR_BUFFER_BIT |GL_DEPTH_BUFFER_BIT); // reset stencil to zero everywhere
+
+  // re-enable defaults
+  glCullFace(GL_BACK);
+  glDepthMask(GL_TRUE);
+  glDepthFunc(GL_LESS);
 }

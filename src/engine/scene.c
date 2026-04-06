@@ -103,8 +103,8 @@ void renderLoop(Scene *scene) {
 
   updateContext(&scene->renderingContext);
 
-  if (scene->hasSkybox)
-    renderSkybox(&scene->renderingContext.skybox);
+  // if (scene->hasSkybox)
+    // renderSkybox(&scene->renderingContext.skybox);
 
   for (int i = 0; i < scene->numObjectsDynamic; i++)
     renderObjectBatch(&scene->dynamicRenderer, scene->dynamicObjects[i], scene->textureIndicesDynamic[i]);

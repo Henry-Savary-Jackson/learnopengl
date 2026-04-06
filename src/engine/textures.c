@@ -8,11 +8,13 @@
 #include <string.h>
 #include <learnopengl/utils/utils.h>
 
-void initTexture(Texture *texture, const char *name, uint textureType,uint format ,uint internalFormat) {
+void initTexture(Texture *texture, const char *name, uint textureType,uint format ,uint internalFormat, uint type) {
   texture->name = name;
   texture->textureType = textureType; // UNKNOWN VALUE
   texture->internalFormat = internalFormat;
   texture->format = format;
+  texture->datatype = type;
+  texture->depth = 0;
   glCreateTextures(textureType, 1, &(texture->glID));
 }
 
@@ -27,10 +29,11 @@ texture->depth =1;
   if (data) {
     texture->format = nrChannels == 4 ? GL_RGBA : GL_RGB;
     texture->internalFormat = nrChannels == 4 ? GL_RGBA8 : GL_RGB8;
+    texture->datatype = GL_UNSIGNED_BYTE;
     glTextureStorage2D(texture->glID, 1, texture->internalFormat,
                        texture->width, texture->height);
     glTextureSubImage2D(texture->glID, 0, 0, 0, texture->width, texture->height,
-                        texture->format, GL_UNSIGNED_BYTE,
+                        texture->format, texture->datatype,
                         data);
 
     stbi_image_free(data);
@@ -72,17 +75,24 @@ void loadTextureCubeMap(Texture *texture, const char *path,
 
     texture->format = nrChannels == 4 ? GL_RGBA : GL_RGB;
     texture->internalFormat = nrChannels == 4 ? GL_RGBA8 : GL_RGB8;
+    texture->datatype = GL_UNSIGNED_BYTE;
     if (i == 0)
       glTextureStorage2D(texture->glID, 1, texture->internalFormat,
                         texture->width, texture->height);
-    glTextureSubImage3D(texture->glID, 0,0,0,i,texture->width, texture->height, 1  ,texture->format , GL_UNSIGNED_BYTE, data);
+    glTextureSubImage3D(texture->glID, 0,0,0,i,texture->width, texture->height, 1  ,texture->format , texture->datatype, data);
 
   }
 }
 
+
+
 void freeTexture(Texture *texture) { glDeleteTextures(1, &(texture->glID)); }
 
 void initSampler(Sampler *sampler) { glGenSamplers(1, &(sampler->glID)); }
+
+void setTextureParameter(Texture *texture, uint key, uint value){
+  glTextureParameteri(texture->glID, key, value);
+}
 
 void setSamplerParameter(Sampler *sampler, uint key, uint value) {
   glSamplerParameteri(sampler->glID, key, value);

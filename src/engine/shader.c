@@ -137,6 +137,7 @@ void attachShadersToProgram(ShaderProgram *program, Shader shaders[],
     printf("Could not link shaders with paths \'%s\' \'%s\'!\nInfo Log:%s", program->shaders[0].path, program->shaders[1].path , log);
 
   }
+  assert(result);
   // assert(result);
 }
 

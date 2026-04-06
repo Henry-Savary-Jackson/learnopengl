@@ -54,12 +54,12 @@ void main()
 {
     Material material = materials[materialIndex];
     gPos = fragPos;
-    gNormal = normal;
+    gNormal =  normal;
     vec3 texCol = vec3(0);
     if (textureIndexFrag != -1)
         vec3 texCol = texture(sampler2D(textures[textureIndexFrag]), texPos).rgb ;
     gAlbedo = normalize(texCol + material.colour.rgb);
-    gTangent = tangent;
+    gTangent =  tangent;
     gBiTangent = bitangent;
     gMaterialIndex = materialIndex;
     gNormalMap = material.normalMapIndex == -1? vec3(0): texture(sampler2D(textures[material.normalMapIndex]), texPos).rgb;
