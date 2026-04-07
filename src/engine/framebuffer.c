@@ -117,20 +117,12 @@ void renderFrameBuffer(FrameBuffer *framebuffer, uint width, uint height,
 
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
-  useShaderProgram(shaderProgram);
-    // Texture t ;
-    // initTexture(&t, "test", GL_TEXTURE_2D, GL_RGB, GL_RGB8);
-    // loadTexture2D(&t, "./textures/container.jpg");
 
-  // char uniformName[strlen(uniformPrefix) + 3];
   for (int i = 0; i < framebuffer->numTextures; i++) {
-    // int t_id ;
-    // glGetNamedFramebufferAttachmentParameteriv(framebuffer->glID,GL_COLOR_ATTACHMENT0+i, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME,&t_id );
-    // assert(t_id == framebuffer->textures[i]->glID);
-    // snprintf(uniformName, sizeof(uniformName), "image%d", i);
     glBindTextureUnit(i+1, framebuffer->textures[i]->glID);
     setUniform1i(shaderProgram, names[i], i+1);
   }
+  useShaderProgram(shaderProgram);
 
   glBindVertexArray(framebuffer->vao);
   glDrawArrays(GL_TRIANGLES, 0, 6);

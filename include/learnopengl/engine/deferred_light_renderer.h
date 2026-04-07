@@ -31,7 +31,6 @@ typedef  struct{
     LightData* lightDataBuffer;
     Vertex* vertexBuffer;
     mat4* transformBuffer;
-    uint* lightIndexBuffer;
     uint* eboBuffer;
 
     Mesh* meshes;
@@ -52,11 +51,11 @@ typedef struct{
     Sampler sampler;
 } DeferredRenderer;
 
-void initDeferredRenderer(DeferredRenderer* renderer, const char ** gBufferTextureNames, uint numGBufferTextures, ShaderProgram* geom, ShaderProgram* light);
+void initDeferredRenderer(DeferredRenderer* renderer, const char ** gBufferTextureNames, uint numGBufferTextures, ShaderProgram* geom, ShaderProgram* light, uint maxLights);
 void renderDeferred(DeferredRenderer* renderer,Scene* scene, ShaderProgram* shaderProg);
 
 
 void initDeferredLightRenderer(DeferredLightRenderer* deferredLightRenderer, uint maxLights );
 void setLights(DeferredLightRenderer* deferredLightRenderer,LightSource** lightSource, uint numLights ,Mesh* mesh);
-void renderAllLights(DeferredLightRenderer* renderer);
+void renderAllLightVolumes(DeferredLightRenderer* renderer);
 void freeDeferredLightRenderer(DeferredLightRenderer* deferredLightRenderer );

@@ -15,49 +15,59 @@ uint getUniformLocation(ShaderProgram *shaderProgram, const char *name) {
 }
 
 uint setUniform1f(ShaderProgram *shaderProgram, const char *name, float value) {
+  useShaderProgram(shaderProgram);
   uint location = getUniformLocation(shaderProgram, name);
   if (location != GL_INVALID_INDEX) {
     glUniform1f(location, value);
     return 0;
   }
+  unbindShaderProgram();
   return -1;
 }
 uint setUniform1i(ShaderProgram *shaderProgram, const char *name, int value) {
+  useShaderProgram(shaderProgram);
   uint location = getUniformLocation(shaderProgram, name);
   if (location != GL_INVALID_INDEX) {
 
     glUniform1i(location, value);
     return 0;
   }
+  unbindShaderProgram();
   return -1;
 }
 
 uint setUniform1ui(ShaderProgram *shaderProgram, const char *name, uint value) {
+  useShaderProgram(shaderProgram);
   uint location = getUniformLocation(shaderProgram, name);
   if (location != GL_INVALID_INDEX) {
 
     glUniform1ui(location, value);
     return 0;
   }
+  unbindShaderProgram();
   return -1;
 }
 
 uint setUniform3fv(ShaderProgram *shaderProgram, const char *name,
                    float value[3]) {
+  useShaderProgram(shaderProgram);
   uint location = getUniformLocation(shaderProgram, name);
   if (location != GL_INVALID_INDEX) {
     glUniform3f(location, value[0], value[1], value[2]);
     return 0;
   }
+  unbindShaderProgram();
   return -1;
 }
 uint setUniform4fv(ShaderProgram *shaderProgram, const char *name,
                    float value[4]) {
+  useShaderProgram(shaderProgram);
   uint location = getUniformLocation(shaderProgram, name);
   if (location != GL_INVALID_INDEX) {
     glUniform4f(location, value[0], value[1], value[2], value[3]);
     return 0;
   }
+  unbindShaderProgram();
   return -1;
 }
 

@@ -112,7 +112,7 @@ void sendLightData(DeferredLightRenderer *renderer) {
                     renderer->eboBuffer, GL_STATIC_DRAW);
 }
 
-void renderAllLights(DeferredLightRenderer *renderer) {
+void renderAllLightVolumes(DeferredLightRenderer *renderer) {
   // send all data to GPU
 
   glBindVertexArray(renderer->vao);
@@ -131,7 +131,7 @@ void renderAllLights(DeferredLightRenderer *renderer) {
 void initDeferredRenderer(DeferredRenderer *renderer,
                           const char **gBufferTextureNames,
                           uint numGBufferTextures, ShaderProgram *geom,
-                          ShaderProgram *light) {
+                          ShaderProgram *light, uint maxLights) {
   renderer->gBufferTextureNames = gBufferTextureNames;
   renderer->numGBufferTextures = numGBufferTextures;
 
@@ -151,7 +151,7 @@ void initDeferredRenderer(DeferredRenderer *renderer,
   initFrameBuffer(&renderer->gBuffer, numGBufferTextures,
                   renderer->gBufferTextures);
 
-  initDeferredLightRenderer(&renderer->lightVolumeRenderer, 1000);
+  initDeferredLightRenderer(&renderer->lightVolumeRenderer, maxLights);
 
   renderer->shaderProgramGeom = geom;
   renderer->shaderProgramLighting = light;
@@ -204,7 +204,7 @@ void renderDeferred(DeferredRenderer *renderer, Scene *scene, ShaderProgram* sha
   glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR, GL_KEEP);
 
 
-  renderAllLights(&renderer->lightVolumeRenderer);
+  renderAllLightVolumes(&renderer->lightVolumeRenderer);
 
 // // //   // second pass, now only perform lighting calculations on fragments whose
 // // //   // stencil value is not zero the lighting caclulations are now done batched
@@ -231,8 +231,10 @@ void renderDeferred(DeferredRenderer *renderer, Scene *scene, ShaderProgram* sha
                  renderer->gBufferTextureNames[i], i+1);
   }
 
+  useShaderProgram(renderer->shaderProgramLighting);
+
   // final pass
-  renderAllLights(&renderer->lightVolumeRenderer);
+  renderAllLightVolumes(&renderer->lightVolumeRenderer);
 
   // glClear(GL_COLOR_BUFFER_BIT |GL_DEPTH_BUFFER_BIT); // reset stencil to zero everywhere
 

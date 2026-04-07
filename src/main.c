@@ -1,3 +1,4 @@
+#include "learnopengl/engine/framebuffer.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cglm/cam.h>
@@ -169,6 +170,11 @@ int main() {
   initShaderProgramFromFiles(&gBufferRender,
                              "./shaders/framebuffer_vs.glsl","./shaders/fragment_deferred_lighting_display_gbuffer.glsl");
 
+  ShaderProgram hdrShader;
+  initShaderProgramFromFiles(&hdrShader,
+                             "./shaders/framebuffer_vs.glsl","./shaders/framebuffer_fs_combine.glsl");
+
+
 
 
 
@@ -213,8 +219,8 @@ int main() {
   Mesh sphere;
   loadModelFromFile("models/sphere.obj", &sphere);
 
-  uint numLights = 15;
-  float bound = 20;
+  uint numLights = 2000;
+  float bound = 40;
 
   uint maxObjectsLight = numLights + 1000;
   uint maxObjects = 5000;
@@ -295,13 +301,20 @@ int main() {
   const char* names [8]= {"gPos", "gAlbedo", "gNormal", "gTangent", "gBiTangent", "gMaterialIndex", "gNormalMap", "gSpecularMap" };
 
   DeferredRenderer deferredRenderer;
-  initDeferredRenderer(&deferredRenderer, names, LENGTH(names),&gBufferGeomShader , &gBufferLightShader);
+  initDeferredRenderer(&deferredRenderer, names, LENGTH(names),&gBufferGeomShader , &gBufferLightShader, maxObjectsLight);
 
   float lastFrameUpdate = 0;
 
   // bind the manager to send global shader info
-  // glEnable(GL_BLEND);
-  // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  FrameBuffer hdrFrameBuffer;
+  Texture textureHdr;
+  Texture * textureHdr_p = &textureHdr;
+  initTexture(textureHdr_p, "HDR", GL_TEXTURE_2D, GL_RGB, GL_RGB8, GL_UNSIGNED_INT);
+  setTextureParameter(textureHdr_p, GL_TEXTURE_MAG_FILTER ,GL_NEAREST);
+  setTextureParameter(textureHdr_p, GL_TEXTURE_MIN_FILTER ,GL_NEAREST);
+  initFrameBuffer(&hdrFrameBuffer, 1 , &textureHdr_p);
+
   bool saved = false;
   preLoop(&scene);
 
@@ -312,7 +325,7 @@ int main() {
     uint height = camera.height;
     glViewport(0, 0, width, height);
 
-    glClearColor(0.0f, 0.2f, 0.2f, 0.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // -- GAME LOGIC --
@@ -329,9 +342,16 @@ int main() {
 
     // -- CALL TO RENDER --
     renderDeferred(&deferredRenderer, &scene, &gBufferRender);
-    // renderLoop(&scene);
 
-    unbindShaderProgram();
+    bindFrameBuffer(&hdrFrameBuffer,  width,  height);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glBlitFramebuffer(0,0,width,height, 0,0,width, height, GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT, GL_NEAREST );
+
+    unbindFrameBuffer();
+    const char * names[1] = {"scene"};
+    setUniform1f(&hdrShader, "exposure", 1);
+    renderFrameBuffer(&hdrFrameBuffer, width, height, &hdrShader, names );
+
 
     glfwPollEvents();
     glfwSwapBuffers(window);

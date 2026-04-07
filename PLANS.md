@@ -9,9 +9,9 @@ with different textures, shaders and meshes as well as multiple lights
     - [x] Blur
     - [x] Bloom
     - [x] Edge detection
-    - Stencils
+    - [x] Stencils
 - Implement basic trasparency
-- Implement deffered lighting for multiple lights (might conflict with trasnparency)
+- [] Implement deffered lighting for multiple lights (might conflict with trasnparency)
 
 
 

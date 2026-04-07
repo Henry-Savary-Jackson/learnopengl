@@ -1,5 +1,6 @@
 #include "learnopengl/engine/object.h"
 #include <glad/glad.h>
+#include "learnopengl/engine/scene.h"
 #include "learnopengl/engine/shader.h"
 #include <GLFW/glfw3.h>
 #include <assert.h>
@@ -523,6 +524,10 @@ void renderObjectBatch(BatchRenderer *renderer, GameObject *object,
   }
 
   assert(retCode != BATCH_RENDER_OBJ_EXCEEDS);
+}
+
+void renderSceneBatched(Scene scene){
+
 }
 
 void freeBatchRenderer(BatchRenderer *renderer) {
