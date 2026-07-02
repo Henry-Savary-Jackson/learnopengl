@@ -7,6 +7,7 @@
 #include <learnopengl/config.h>
 #include <learnopengl/engine/batch_render.h>
 #include <learnopengl/engine/camera.h>
+#include <learnopengl/engine/deferred_light_renderer.h>
 #include <learnopengl/engine/global_info.h>
 #include <learnopengl/engine/loading/model_loader.h>
 #include <learnopengl/engine/mesh.h>
@@ -15,7 +16,6 @@
 #include <learnopengl/engine/shader.h>
 #include <learnopengl/engine/skybox.h>
 #include <learnopengl/engine/textures.h>
-#include <learnopengl/engine/deferred_light_renderer.h>
 #include <learnopengl/utils/arraylist.h>
 #include <learnopengl/utils/utils.h>
 #include <stdbool.h>
@@ -149,48 +149,49 @@ int main() {
                              "./shaders/light_source_fragment.glsl");
 
   ShaderProgram skyboxShader;
-  initShaderProgramFromFiles(&skyboxShader,
-                             "./shaders/vertex_skybox.glsl",
+  initShaderProgramFromFiles(&skyboxShader, "./shaders/vertex_skybox.glsl",
                              "./shaders/fragment_skybox.glsl");
 
   ShaderProgram gBufferShader;
   initShaderProgramFromFiles(&gBufferShader,
-                             "./shaders/vertex_batched_with_lights.glsl","./shaders/fragment_deferred.glsl");
+                             "./shaders/vertex_batched_with_lights.glsl",
+                             "./shaders/fragment_deferred.glsl");
 
   ShaderProgram gBufferGeomShader;
-    initShaderProgramFromFiles(&gBufferGeomShader,
-      "./shaders/vertex_deferred_lighting.glsl","./shaders/fragment_deferred_geom_pass.glsl");
-
+  initShaderProgramFromFiles(&gBufferGeomShader,
+                             "./shaders/vertex_deferred_lighting.glsl",
+                             "./shaders/fragment_deferred_geom_pass.glsl");
 
   ShaderProgram gBufferLightShader;
   initShaderProgramFromFiles(&gBufferLightShader,
-                             "./shaders/vertex_deferred_lighting.glsl","./shaders/fragment_deferred_lighting.glsl");
+                             "./shaders/vertex_deferred_lighting.glsl",
+                             "./shaders/fragment_deferred_lighting.glsl");
 
   ShaderProgram gBufferRender;
-  initShaderProgramFromFiles(&gBufferRender,
-                             "./shaders/framebuffer_vs.glsl","./shaders/fragment_deferred_lighting_display_gbuffer.glsl");
+  initShaderProgramFromFiles(
+      &gBufferRender, "./shaders/framebuffer_vs.glsl",
+      "./shaders/fragment_deferred_lighting_display_gbuffer.glsl");
 
   ShaderProgram hdrShader;
-  initShaderProgramFromFiles(&hdrShader,
-                             "./shaders/framebuffer_vs.glsl","./shaders/framebuffer_fs_combine.glsl");
-
-
-
-
+  initShaderProgramFromFiles(&hdrShader, "./shaders/framebuffer_vs.glsl",
+                             "./shaders/framebuffer_fs_combine.glsl");
 
   Texture texture;
-  initTexture(&texture, "container", GL_TEXTURE_2D, GL_RGB, GL_RGB8, GL_UNSIGNED_BYTE);
+  initTexture(&texture, "container", GL_TEXTURE_2D, GL_RGB, GL_RGB8,
+              GL_UNSIGNED_BYTE);
   loadTexture2D(&texture, "./textures/container.jpg");
 
   Texture skyBoxTexture;
   const char *faces[6] = {"right.jpg",  "left.jpg",  "top.jpg",
                           "bottom.jpg", "front.jpg", "back.jpg"};
 
-  initTexture(&skyBoxTexture, "skybox", GL_TEXTURE_CUBE_MAP, GL_RGB, GL_RGB8, GL_UNSIGNED_BYTE);
+  initTexture(&skyBoxTexture, "skybox", GL_TEXTURE_CUBE_MAP, GL_RGB, GL_RGB8,
+              GL_UNSIGNED_BYTE);
   loadTextureCubeMap(&skyBoxTexture, "./textures/skybox", faces);
 
   Texture normalMapBrickwall;
-  initTexture(&normalMapBrickwall, "brick_normal", GL_TEXTURE_2D, GL_RGB,GL_RGB8, GL_UNSIGNED_BYTE );
+  initTexture(&normalMapBrickwall, "brick_normal", GL_TEXTURE_2D, GL_RGB,
+              GL_RGB8, GL_UNSIGNED_BYTE);
   loadTexture2D(&normalMapBrickwall, "./textures/brickwall_normal.jpg");
 
   Sampler sampler;
@@ -219,8 +220,8 @@ int main() {
   Mesh sphere;
   loadModelFromFile("models/sphere.obj", &sphere);
 
-  uint numLights = 2000;
-  float bound = 40;
+  uint numLights = 3;
+  float bound = 10;
 
   uint maxObjectsLight = numLights + 1000;
   uint maxObjects = 5000;
@@ -239,7 +240,7 @@ int main() {
   for (int i = 0; i < numLights; i++) {
     lights[i].colour =
         (vec3s){rand_float(0, 1), rand_float(0, 1), rand_float(0, 1)};
-    lights[i].power = rand_float(1,3 );
+    lights[i].power = rand_float(0.5, 1);
     initGameObject(&lights[i].object);
     setMeshGameObject(&lights[i].object, &sphere);
     setMaterialGameObject(&lights[i].object, &material);
@@ -249,21 +250,23 @@ int main() {
     setShaderProgramGameObject(&lights[i].object, &lightShaderProgram);
     addLightToScene(&scene, &lights[i], DYNAMIC_OBJ);
     setSampler(&lights[i].object, &sampler);
-    scaleGameObjectFloat(&lights[i].object,
-                         getLightRadius(&lights[i]));
+    scaleGameObjectFloat(&lights[i].object, getLightRadius(&lights[i]));
   }
+  lights[0].colour = (vec3s){0, 0, 0.8};
+  lights[1].colour = (vec3s){0, 0.8, 0};
+  lights[2].colour = (vec3s){0.8, 0, 0};
+
 
   Mesh bullMesh;
   loadModelFromFile("models/bull.obj", &bullMesh);
 
-
-  srand(10);
+  srand(9);
   int numObjects = 100;
   GameObject *objects = malloc(numObjects * sizeof(GameObject));
   for (int i = 0; i < numObjects; i++) {
     initGameObject(&objects[i]);
-    scaleGameObjectFloat(&objects[i],  0.01);
-    setMeshGameObject(&objects[i],  &bullMesh );
+    scaleGameObjectFloat(&objects[i], 0.01);
+    setMeshGameObject(&objects[i], &bullMesh);
     // scaleGameObjectFloat(&objects[i], 1);
     // setMeshGameObject(&objects[i], &meshCube);
     setShaderProgramGameObject(&objects[i], &gBufferShader);
@@ -297,11 +300,14 @@ int main() {
   glCullFace(GL_BACK);
   glfwSwapInterval(0);
 
-
-  const char* names [8]= {"gPos", "gAlbedo", "gNormal", "gTangent", "gBiTangent", "gMaterialIndex", "gNormalMap", "gSpecularMap" };
+  const char *names[8] = {"gPos",       "gAlbedo",     "gNormal",
+                          "gTangent",   "gBiTangent",  "gMaterialIndex",
+                          "gNormalMap", "gSpecularMap"};
 
   DeferredRenderer deferredRenderer;
-  initDeferredRenderer(&deferredRenderer, names, LENGTH(names),&gBufferGeomShader , &gBufferLightShader, maxObjectsLight);
+  initDeferredRenderer(&deferredRenderer, names, LENGTH(names),
+                       &gBufferGeomShader, &gBufferLightShader,
+                       maxObjectsLight);
 
   float lastFrameUpdate = 0;
 
@@ -309,11 +315,12 @@ int main() {
 
   FrameBuffer hdrFrameBuffer;
   Texture textureHdr;
-  Texture * textureHdr_p = &textureHdr;
-  initTexture(textureHdr_p, "HDR", GL_TEXTURE_2D, GL_RGB, GL_RGB8, GL_UNSIGNED_INT);
-  setTextureParameter(textureHdr_p, GL_TEXTURE_MAG_FILTER ,GL_NEAREST);
-  setTextureParameter(textureHdr_p, GL_TEXTURE_MIN_FILTER ,GL_NEAREST);
-  initFrameBuffer(&hdrFrameBuffer, 1 , &textureHdr_p);
+  Texture *textureHdr_p = &textureHdr;
+  initTexture(textureHdr_p, "HDR", GL_TEXTURE_2D, GL_RGB, GL_RGB8,
+              GL_UNSIGNED_INT);
+  setTextureParameter(textureHdr_p, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  setTextureParameter(textureHdr_p, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  initFrameBuffer(&hdrFrameBuffer, 1, &textureHdr_p);
 
   bool saved = false;
   preLoop(&scene);
@@ -326,7 +333,7 @@ int main() {
     glViewport(0, 0, width, height);
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     // -- GAME LOGIC --
 
@@ -343,15 +350,15 @@ int main() {
     // -- CALL TO RENDER --
     renderDeferred(&deferredRenderer, &scene, &gBufferRender);
 
-    bindFrameBuffer(&hdrFrameBuffer,  width,  height);
+    bindFrameBuffer(&hdrFrameBuffer, width, height);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    glBlitFramebuffer(0,0,width,height, 0,0,width, height, GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT, GL_NEAREST );
+    glBlitFramebuffer(0, 0, width, height, 0, 0, width, height,
+                      GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 
     unbindFrameBuffer();
-    const char * names[1] = {"scene"};
+    const char *names[1] = {"scene"};
     setUniform1f(&hdrShader, "exposure", 1);
-    renderFrameBuffer(&hdrFrameBuffer, width, height, &hdrShader, names );
-
+    renderFrameBuffer(&hdrFrameBuffer, width, height, &hdrShader, names);
 
     glfwPollEvents();
     glfwSwapBuffers(window);

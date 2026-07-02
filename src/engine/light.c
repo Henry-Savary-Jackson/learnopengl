@@ -6,7 +6,7 @@ float getLightRadius(LightSource* lightData){
     const float linearTerm= 0.7;
     const float quadTerm  = 1.8;
     const float maxComp = MAX(MAX(lightData->colour.r, lightData->colour.g), lightData->colour.b);
-    return (-linearTerm + sqrt(linearTerm*linearTerm- 4 * quadTerm * (constTerm- lightData->power * 256/4)))/(2*quadTerm);
+    return (-linearTerm + sqrt(linearTerm*linearTerm- 4 * quadTerm * (constTerm- lightData->power * 512/1)))/(2*quadTerm);
 }
 
 // encode the information on scene lights so that the opengl UBO can read them

@@ -94,6 +94,7 @@ vec3 getColourLight(  inout LightSource light, inout Material material, vec2 tex
 
     vec3 ambient =   lightColour  * ambientCoeff;
     vec3 materialColour = material.colour.rgb;
+    // vec3 materialColour = vec3(1,1,1);
 
     float power = light.power;
     vec3 lightPos = light.position.xyz;
@@ -113,7 +114,7 @@ vec3 getColourLight(  inout LightSource light, inout Material material, vec2 tex
     float spec =  clamp(dot(reflect(lightDir,normal), normalize(fragPos)  ),0,1) ;
     vec3 specular = pow(spec,128) * lightColour * specularCoeff;
 
-    return ambient + (diffuse +specular)*materialColour*intensity ;;
+    return ambient + (diffuse +specular)*materialColour*intensity ;
 }
 
 

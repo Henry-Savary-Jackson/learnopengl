@@ -1,3 +1,5 @@
+#include <glad/glad.h>
+#include <GL/gl.h>
 #include "learnopengl/engine/batch_render.h"
 #include "learnopengl/engine/camera.h"
 #include "learnopengl/engine/framebuffer.h"
@@ -10,7 +12,6 @@
 #include "learnopengl/engine/shader.h"
 #include "learnopengl/engine/textures.h"
 #include <cglm/mat4.h>
-#include <glad/glad.h>
 #include <learnopengl/engine/deferred_light_renderer.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -167,7 +168,7 @@ void renderDeferred(DeferredRenderer *renderer, Scene *scene, ShaderProgram* sha
   bindFrameBuffer(&renderer->gBuffer, scene->camera->width,
                   scene->camera->height);
 
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT| GL_STENCIL_BUFFER_BIT);
 
   renderLoop(scene);
   uint width = scene->camera->width; uint height= scene->camera->height;
@@ -198,10 +199,12 @@ void renderDeferred(DeferredRenderer *renderer, Scene *scene, ShaderProgram* sha
 // //   // We need the stencil test to be enabled but we want it
 //   // to succeed always. Only the depth test matters.
   glEnable(GL_STENCIL_TEST);
-  glEnable(GL_CULL_FACE);
-  glCullFace(GL_BACK);
-  glStencilFuncSeparate(GL_FRONT,GL_ALWAYS, 0, 0);
-  glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR, GL_KEEP);
+  glEnable(GL_DEPTH_TEST);
+  // glEnable(GL_CULL_FACE);
+  glDisable(GL_CULL_FACE);
+  glStencilFunc(GL_ALWAYS, 0, 0);
+  glStencilOpSeparate(GL_BACK, GL_KEEP, GL_DECR_WRAP,GL_KEEP );
+  glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
 
 
   renderAllLightVolumes(&renderer->lightVolumeRenderer);
@@ -215,14 +218,17 @@ void renderDeferred(DeferredRenderer *renderer, Scene *scene, ShaderProgram* sha
 // //   // additive blending on each light's contribution
   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
-  glDisable(GL_BLEND);
-  // glBlendFunc(GL_ONE, GL_ONE);
-  // glBlendEquation(GL_FUNC_ADD);
-  glDepthFunc(GL_GREATER);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_ONE, GL_ONE);
+  glBlendEquation(GL_FUNC_ADD);
+  // glDisable(GL_BLEND);
 
+  glEnable(GL_CULL_FACE);
+  // gl
   glCullFace(GL_FRONT);
 
-  glStencilFunc(GL_EQUAL, 0, 0xff);
+  glStencilFunc(GL_NOTEQUAL, 0, 0xff);
+  glDisable(GL_DEPTH_TEST);
   glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
   for (int i = 0; i < renderer->numGBufferTextures; i++) {
@@ -235,11 +241,17 @@ void renderDeferred(DeferredRenderer *renderer, Scene *scene, ShaderProgram* sha
 
   // final pass
   renderAllLightVolumes(&renderer->lightVolumeRenderer);
+  // glBlitNamedFramebuffer(0, renderer->gBuffer.glID, 0,0, width, height, 0,0, width, height, GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 
-  // glClear(GL_COLOR_BUFFER_BIT |GL_DEPTH_BUFFER_BIT); // reset stencil to zero everywhere
+  // renderFrameBuffer(&renderer->gBuffer, width,  height, shaderProgram, renderer->gBufferTextureNames);
+
 
   // re-enable defaults
   glCullFace(GL_BACK);
+  glEnable(GL_DEPTH_TEST);
+  glDisable(GL_STENCIL_TEST);
+  // glStencilMask(GL_TRUE);
+  glDisable(GL_BLEND);
   glDepthMask(GL_TRUE);
   glDepthFunc(GL_LESS);
 }

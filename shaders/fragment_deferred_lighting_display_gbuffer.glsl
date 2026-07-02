@@ -17,5 +17,5 @@ uniform usampler2D gMaterialIndex;
 out vec4 FragColor;
 void main()
 {
-    FragColor =  vec4(texture(gPos, texC).rgb,1);
+    FragColor =  vec4(0,1,1,1);
 }
